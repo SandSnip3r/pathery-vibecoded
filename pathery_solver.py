@@ -270,15 +270,11 @@ class PatherySolver:
                 )
 
             fitness_scores, optimized_individuals = zip(*results)
-            
-            logging.info(f"Fitness scores: {fitness_scores}")
 
             for i, score in enumerate(fitness_scores):
                 if score > best_path_length:
                     best_path_length = score
                     best_individual = optimized_individuals[i]
-                    logging.info(f"New best score: {best_path_length}")
-                    logging.info(f"Best individual wall positions: {best_individual}")
 
             # Select parents and carry over elites
             sorted_population = [x for _, x in sorted(zip(optimized_individuals, optimized_individuals), key=lambda pair: pair[0], reverse=True)]
