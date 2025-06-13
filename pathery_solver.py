@@ -4,22 +4,17 @@ import math
 import random
 from pathery_emulator import PatheryEmulator
 
-def _calculate_fitness(args):
-    individual, num_walls, width, height, start, finish, rocks = args
-    
-    # Create a new emulator instance for each process
-    emulator = PatheryEmulator(width, height, num_walls)
-    emulator.set_start(start[0], start[1])
-    emulator.set_finish(finish[0], finish[1])
-    for rock in rocks:
-        emulator.add_rock(rock[0], rock[1])
-
+def _init_worker(emulator):
+    global solver
     solver = PatherySolver(emulator)
+
+def _calculate_fitness(individual):
+    
     solver._clear_walls()
     for x, y in individual:
         solver.emulator.add_wall(x, y)
     
-    _, path_length, optimized_individual = solver._hill_climb_optimizer(num_walls)
+    _, path_length, optimized_individual = solver._hill_climb_optimizer(solver.emulator.num_walls)
     return path_length, optimized_individual
 
 
@@ -252,7 +247,10 @@ class PatherySolver:
             population.append(wall_positions)
 
         for generation in range(num_generations):
-            logging.info(f"Generation {generation + 1}/{num_generations}, Best score so far: {best_path_length}")
+            # Dynamic mutation rate
+            current_mutation_rate = max(0.01, mutation_rate * (0.95 ** generation))
+
+            logging.info(f"Generation {generation + 1}/{num_generations}, Best score so far: {best_path_length}, Mutation rate: {current_mutation_rate:.4f}")
             logging.getLogger().handlers[0].flush()
             
             rocks = []
@@ -263,11 +261,8 @@ class PatherySolver:
 
             
             # Asynchronously calculate fitness for the population
-            with Pool() as pool:
-                results = pool.map(
-                    _calculate_fitness,
-                    [(individual, num_walls, self.emulator.width, self.emulator.height, self.emulator.start, self.emulator.finish, rocks) for individual in population]
-                )
+            with Pool(initializer=_init_worker, initargs=(self.emulator,)) as pool:
+                results = pool.map(_calculate_fitness, population)
 
             fitness_scores, optimized_individuals = zip(*results)
 
@@ -286,7 +281,7 @@ class PatherySolver:
             for _ in range(population_size - elite_size):
                 parent1, parent2 = random.choices(parents, k=2)
                 child = self._crossover(parent1, parent2, num_walls)
-                self._mutate(child, mutation_rate)
+                self._mutate(child, current_mutation_rate)
                 new_population.append(child)
 
             population = new_population
@@ -300,24 +295,44 @@ class PatherySolver:
         return self.emulator.find_path(), best_path_length
 
     def _select_parents(self, population, fitness_scores):
-        # Simple tournament selection
+        # Roulette wheel selection
         parents = []
+        total_fitness = sum(fitness_scores)
+        if total_fitness == 0:
+            # If all fitness scores are 0, select randomly
+            return random.choices(population, k=len(population))
+
         for _ in range(len(population)):
-            tournament_indices = random.sample(range(len(population)), k=3)
-            tournament_fitnesses = [fitness_scores[i] for i in tournament_indices]
-            winner_index = tournament_indices[tournament_fitnesses.index(max(tournament_fitnesses))]
-            parents.append(population[winner_index])
+            selection_point = random.uniform(0, total_fitness)
+            current_sum = 0
+            for i, fitness in enumerate(fitness_scores):
+                current_sum += fitness
+                if current_sum > selection_point:
+                    parents.append(population[i])
+                    break
         return parents
 
     def _crossover(self, parent1, parent2, num_walls):
         child = []
-        combined = parent1 + parent2
-        random.shuffle(combined)
-        for gene in combined:
+        
+        # Uniform crossover
+        for i in range(num_walls):
+            if random.random() < 0.5:
+                gene = parent1[i]
+            else:
+                gene = parent2[i]
+            
             if gene not in child:
                 child.append(gene)
-            if len(child) == num_walls:
+
+        # Fill remaining genes if necessary
+        combined = parent1 + parent2
+        for gene in combined:
+            if len(child) >= num_walls:
                 break
+            if gene not in child:
+                child.append(gene)
+                
         return child
 
     def _mutate(self, individual, mutation_rate):

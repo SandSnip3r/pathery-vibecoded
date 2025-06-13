@@ -1,38 +1,45 @@
 import time
 import logging
-import solver
-from pathery_solver import load_puzzle
+from pathery_solver import PatherySolver, load_puzzle
 
 # Configure logging
 logging.basicConfig(filename='/usr/local/google/home/victorstone/pathery_project/benchmark_results.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def run_benchmark():
     """
-    Runs a single generation of the solver and logs the execution time.
+    Runs the full solver and logs the execution time and final path length.
     """
     # Load the puzzle
     puzzle_file = '/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_2.json'
     game, _ = load_puzzle(puzzle_file)
 
-    # Time a single generation
+    # Create a solver
+    solver = PatherySolver(game)
+
+    # Time the full solver
     start_time = time.time()
     
-    solver.solve(
-        game.width,
-        game.height,
+    best_path, best_path_length = solver.solve_hybrid_genetic_algorithm(
         game.num_walls,
-        [rock for rock in game.grid if rock == 'O'],
-        game.start,
-        game.finish,
-        100, 1, 0.01, 5 # Just one generation for the benchmark
+        100, # population_size
+        50,  # num_generations
+        0.1, # mutation_rate
+        5    # elite_size
     )
 
     end_time = time.time()
     duration = end_time - start_time
     
-    logging.info(f"Benchmark Result: A single generation took {duration:.4f} seconds.")
+    logging.info(f"Benchmark Result: Final path length of {best_path_length} in {duration:.4f} seconds.")
     logging.getLogger().handlers[0].flush()
-    print(f"Benchmark Result: A single generation took {duration:.4f} seconds.")
+    print(f"Benchmark Result: Final path length of {best_path_length} in {duration:.4f} seconds.")
+
+    if best_path:
+        print("Solution found:")
+        game.draw_path(best_path)
+        game.display()
+    else:
+        print("No path found.")
 
 if __name__ == '__main__':
     run_benchmark()
