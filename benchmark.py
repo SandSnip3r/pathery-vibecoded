@@ -12,18 +12,18 @@ def run_benchmark():
     """
     # Load the puzzle
     puzzle_file = '/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_2.json'
-    puzzle_data = load_puzzle(puzzle_file)
+    game, _ = load_puzzle(puzzle_file)
 
     # Time a single generation
     start_time = time.time()
     
     solver.solve(
-        puzzle_data['width'],
-        puzzle_data['height'],
-        puzzle_data['num_walls'],
-        [tuple(r) for r in puzzle_data['rocks']],
-        tuple(puzzle_data['start']),
-        tuple(puzzle_data['finish']),
+        game.width,
+        game.height,
+        game.num_walls,
+        [rock for rock in game.grid if rock == 'O'],
+        game.start,
+        game.finish,
         100, 1, 0.01, 5 # Just one generation for the benchmark
     )
 

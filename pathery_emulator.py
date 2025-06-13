@@ -1,4 +1,5 @@
 import heapq
+from pathery_pathfinding import find_path_cpp
 
 class PatheryEmulator:
     """
@@ -105,42 +106,21 @@ class PatheryEmulator:
     def find_path(self):
         """
         Finds the path from the start to the finish using the Pathery AI logic.
-
-        The AI's move priority is: Up, Right, Down, Left.
         """
         if not self.start or not self.finish:
             raise ValueError("Start and finish positions must be set.")
 
-        # Priority queue for the A* algorithm
-        # (cost, path)
-        pq = [(0, [self.start])]
-        visited = set()
-
-        while pq:
-            cost, path = heapq.heappop(pq)
-            node = path[-1]
-
-            if node == self.finish:
-                return path
-
-            if node in visited:
-                continue
-            visited.add(node)
-
-            x, y = node
-            # The order of neighbors is determined by the AI's priority: Up, Right, Down, Left
-            neighbors = [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
-
-            for i, (nx, ny) in enumerate(neighbors):
-                if 0 <= nx < self.width and 0 <= ny < self.height and self.grid[ny][nx] not in ('#', 'O'):
-                    new_path = list(path)
-                    new_path.append((nx, ny))
-                    # The cost is the length of the path. We add a small value based on the move priority
-                    # to ensure the correct path is chosen when lengths are equal.
-                    new_cost = len(new_path) + i * 0.1
-                    heapq.heappush(pq, (new_cost, new_path))
-
-        return None  # No path found
+        walls = []
+        rocks = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x] == '#':
+                    walls.append((x, y))
+                elif self.grid[y][x] == 'O':
+                    rocks.append((x, y))
+        
+        path = find_path_cpp(self.width, self.height, walls, rocks, self.start, self.finish)
+        return path if path else None
 
     def draw_path(self, path):
         """

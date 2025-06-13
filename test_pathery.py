@@ -61,6 +61,7 @@ class TestPathery(unittest.TestCase):
             logging.info("".join(row))
             
         final_path = game.find_path()
+        self.assertIsNotNone(final_path)
         self.assertEqual(len(best_path), len(final_path))
 
 if __name__ == '__main__':
