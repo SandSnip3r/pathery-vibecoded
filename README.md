@@ -13,36 +13,20 @@ This project is a high-performance, Python-based command-line application design
     *   The Hybrid Genetic Algorithm (the most effective solver)
 *   **Comprehensive Tooling:** The project includes a benchmark tool for performance measurement, a suite of unit tests for ensuring correctness, and detailed logging for debugging and analysis.
 
-## Project Structure
+## Project Overview
 
-```
-pathery_project/
-│
-├─── puzzles/
-│    ├─── puzzle_1.json
-│    └─── puzzle_2.json
-│
-├─── .gitignore
-├─── benchmark.py
-├─── pathery_emulator.py
-├─── pathery_solver.py
-├─── pathery_pathfinding.cpp
-├─── README.md
-├─── requirements.txt
-├─── rules.md
-├─── setup.py
-└─── test_pathery.py
-```
-
+*   **`puzzles/`**: This directory contains puzzle definitions in a simple JSON format. Each file defines a puzzle's dimensions, wall count, start/finish points, and rock locations.
 *   **`pathery_solver.py`**: The main entry point for the application. It contains the implementation of the genetic algorithm and other solution strategies.
 *   **`pathery_emulator.py`**: Simulates the Pathery game board, handling the grid, walls, rocks, and the pathfinding logic.
 *   **`pathery_pathfinding.cpp`**: A C++ implementation of the A* pathfinding algorithm, exposed to Python using `pybind11`.
 *   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension.
-*   **`puzzles/`**: Contains puzzle definitions in a simple JSON format.
 *   **`test_pathery.py`**: A suite of unit tests built with Python's `unittest` module.
 *   **`benchmark.py`**: A script for measuring the performance of the solver.
-*   **`rules.md`**: A detailed explanation of the Pathery game rules and mechanics.
-*   **`requirements.txt`**: Lists the project's Python dependencies.
+
+## Prerequisites
+
+*   Python 3
+*   A C++ compiler (e.g., GCC, Clang, MSVC)
 
 ## Setup and Installation
 
@@ -51,15 +35,17 @@ pathery_project/
     python3 -m venv venv
     source venv/bin/activate
     ```
-    **Note:** All subsequent `python` and `pip` commands should be run from within this activated virtual environment.
 
 2.  **Install Dependencies and Compile the C++ Module:**
+    *From within the activated virtual environment*, run the following commands:
     ```bash
     pip install -r requirements.txt
     python setup.py install
     ```
 
 ## Usage
+
+**Note:** Before running any of the following commands, make sure you have activated the virtual environment (`source venv/bin/activate`).
 
 ### Solving Puzzles
 
@@ -79,9 +65,15 @@ python3 test_pathery.py
 
 ### Running Benchmarks
 
-To measure the performance of a single generation of the solver, run the `benchmark.py` script.
+To measure the performance of the solver, run the `benchmark.py` script.
 
 ```bash
 python3 benchmark.py
 ```
-The script will print the execution time to the console and log the result to `benchmark_results.log`.
+The script will print the final path length and execution time to the console, and log the result to `benchmark_results.log`.
+
+## Logging
+
+The application generates two log files:
+*   `solver.log`: Logs the progress of the genetic algorithm, including the best score at each generation.
+*   `benchmark_results.log`: Logs the results of the benchmark runs.
