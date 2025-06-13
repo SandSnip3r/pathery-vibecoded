@@ -4,3 +4,9 @@
 
 # Virtual Environment
 venv/
+
+# Build artifacts
+build/
+__pycache__/
+*.so
+*.o

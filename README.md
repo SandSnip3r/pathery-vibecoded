@@ -49,6 +49,7 @@ pathery_project/
     python3 -m venv venv
     source venv/bin/activate
     ```
+    **Note:** All subsequent `python` and `pip` commands should be run from within this activated virtual environment.
 
 2.  **Install Dependencies:**
     There are no external dependencies required to run the current version of the project. All necessary modules are part of the Python standard library.

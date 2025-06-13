@@ -19,8 +19,9 @@ def _calculate_fitness(args):
     for x, y in individual:
         solver.emulator.add_wall(x, y)
     
-    _, path_length = solver._hill_climb_optimizer(num_walls)
-    return path_length
+    _, path_length, optimized_individual = solver._hill_climb_optimizer(num_walls)
+    return path_length, optimized_individual
+
 
 
 class PatherySolver:
@@ -56,7 +57,7 @@ class PatherySolver:
             self._clear_walls()
             self._randomly_place_walls(num_walls)
             
-            _, path_length = self._hill_climb_optimizer(num_walls)
+            _, path_length, _ = self._hill_climb_optimizer(num_walls)
 
             if path_length > best_path_length:
                 best_path_length = path_length
@@ -75,7 +76,7 @@ class PatherySolver:
         """
         current_path = self.emulator.find_path()
         if not current_path:
-            return None, 0
+            return None, 0, []
 
         current_path_length = len(current_path)
 
@@ -118,8 +119,14 @@ class PatherySolver:
                 current_path_length = best_neighbor_path_length
             else:
                 break
+        
+        final_wall_positions = []
+        for y in range(self.emulator.height):
+            for x in range(self.emulator.width):
+                if self.emulator.grid[y][x] == '#':
+                    final_wall_positions.append((x, y))
 
-        return self.emulator.find_path(), current_path_length
+        return self.emulator.find_path(), current_path_length, final_wall_positions
 
     def _clear_walls(self):
         for y in range(self.emulator.height):
@@ -229,9 +236,8 @@ class PatherySolver:
         Returns:
             tuple: A tuple containing the best path found and its length.
         """
-        best_path = None
         best_path_length = 0
-        best_grid = None
+        best_individual = None
 
         # Initialize population
         population = []
@@ -255,23 +261,29 @@ class PatherySolver:
                     if self.emulator.grid[y][x] == 'O':
                         rocks.append((x,y))
 
-            with Pool() as executor:
-                args = [(ind, num_walls, self.emulator.width, self.emulator.height, self.emulator.start, self.emulator.finish, rocks) for ind in population]
-                fitness_scores = list(executor.map(_calculate_fitness, args))
+            
+            # Asynchronously calculate fitness for the population
+            with Pool() as pool:
+                results = pool.map(
+                    _calculate_fitness,
+                    [(individual, num_walls, self.emulator.width, self.emulator.height, self.emulator.start, self.emulator.finish, rocks) for individual in population]
+                )
+
+            fitness_scores, optimized_individuals = zip(*results)
+            
+            logging.info(f"Fitness scores: {fitness_scores}")
 
             for i, score in enumerate(fitness_scores):
                 if score > best_path_length:
                     best_path_length = score
-                    self._clear_walls()
-                    for x, y in population[i]:
-                        self.emulator.add_wall(x, y)
-                    best_path = self.emulator.find_path()
-                    best_grid = [row[:] for row in self.emulator.grid]
+                    best_individual = optimized_individuals[i]
+                    logging.info(f"New best score: {best_path_length}")
+                    logging.info(f"Best individual wall positions: {best_individual}")
 
             # Select parents and carry over elites
-            sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0], reverse=True)]
+            sorted_population = [x for _, x in sorted(zip(optimized_individuals, optimized_individuals), key=lambda pair: pair[0], reverse=True)]
             elites = sorted_population[:elite_size]
-            parents = self._select_parents(population, fitness_scores)
+            parents = self._select_parents(optimized_individuals, fitness_scores)
 
             # Create new population
             new_population = elites
@@ -284,18 +296,21 @@ class PatherySolver:
             population = new_population
 
         # Restore the best grid found
-        if best_grid:
-            self.emulator.grid = best_grid
+        if best_individual:
+            self._clear_walls()
+            for x, y in best_individual:
+                self.emulator.add_wall(x, y)
 
-        return best_path, best_path_length
+        return self.emulator.find_path(), best_path_length
 
     def _select_parents(self, population, fitness_scores):
         # Simple tournament selection
         parents = []
         for _ in range(len(population)):
-            tournament = random.sample(list(zip(population, fitness_scores)), k=3)
-            winner = max(tournament, key=lambda x: x[1])
-            parents.append(winner[0])
+            tournament_indices = random.sample(range(len(population)), k=3)
+            tournament_fitnesses = [fitness_scores[i] for i in tournament_indices]
+            winner_index = tournament_indices[tournament_fitnesses.index(max(tournament_fitnesses))]
+            parents.append(population[winner_index])
         return parents
 
     def _crossover(self, parent1, parent2, num_walls):
@@ -347,16 +362,25 @@ import logging
 
 logging.basicConfig(filename='/usr/local/google/home/victorstone/pathery_project/solver.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
+import sys
+
+import sys
+import argparse
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("puzzle_file", help="The path to the puzzle file.")
+    parser.add_argument("--generations", type=int, default=200, help="The number of generations to run.")
+    args = parser.parse_args()
+
     # Load the puzzle
-    puzzle_file = '/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_2.json'
-    game, best_known_solution = load_puzzle(puzzle_file)
+    game, best_known_solution = load_puzzle(args.puzzle_file)
 
     # Create a solver
     solver = PatherySolver(game)
 
     # Find the best path using a hybrid genetic algorithm
-    best_path, best_path_length = solver.solve_hybrid_genetic_algorithm(game.num_walls, 100, 200, 0.01, 5)
+    best_path, best_path_length = solver.solve_hybrid_genetic_algorithm(game.num_walls, 100, args.generations, 0.01, 5)
 
     if best_path:
         print(f"Best path found with length: {best_path_length}")
