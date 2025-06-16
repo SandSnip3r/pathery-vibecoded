@@ -120,20 +120,7 @@ class PatheryEmulator:
         else:
             raise ValueError("Checkpoint position is out of bounds.")
 
-    def remove_checkpoint(self, x, y):
-        """
-        Removes a checkpoint from the grid.
-
-        Args:
-            x (int): The x-coordinate of the checkpoint to remove.
-            y (int): The y-coordinate of the checkpoint to remove.
-        """
-        if 0 <= x < self.width and 0 <= y < self.height:
-            if self.grid[y][x].isalpha() and self.grid[y][x] not in ('S', 'F'):
-                self.grid[y][x] = ' '
-                self.checkpoints = [(pos, lbl) for pos, lbl in self.checkpoints if pos != (x, y)]
-        else:
-            raise ValueError("Checkpoint position is out of bounds.")
+    
 
     def find_path(self):
         """
@@ -219,37 +206,3 @@ class PatheryEmulator:
             print('|' + ' '.join(row) + '|')
         # Bottom border
         print('+' + '-' * (self.width * 2 - 1) + '+')
-
-if __name__ == '__main__':
-    # Create a 10x10 grid
-    game = PatheryEmulator(10, 10, 10)
-
-    # Set start and finish points
-    game.set_start(0, 0)
-    game.set_finish(9, 9)
-
-    # Add some rocks
-    game.add_rock(5, 0)
-    game.add_rock(5, 1)
-    game.add_rock(5, 2)
-    game.add_rock(5, 3)
-    game.add_rock(5, 4)
-
-    # Add some walls
-    game.add_wall(1, 0)
-    game.add_wall(1, 1)
-    game.add_wall(1, 2)
-    game.add_wall(1, 3)
-    game.add_wall(1, 4)
-
-
-    # Find and display the path
-    path = game.find_path()
-    if path:
-        print(f"Path found with length: {len(path)}")
-        game.draw_path(path)
-    else:
-        print("No path found.")
-
-    # Display the grid
-    game.display()
