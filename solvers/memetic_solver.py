@@ -1,4 +1,6 @@
 
+from typing import Tuple, List, Optional, Any
+from pathery_emulator import PatheryEmulator
 from solvers.base_solver import BaseSolver
 from solvers.hybrid_genetic_solver import HybridGeneticSolver
 from solvers.hill_climbing_solver import HillClimbingSolver
@@ -8,7 +10,7 @@ class MemeticSolver(BaseSolver):
     A solver that uses a memetic algorithm.
     """
 
-    def __init__(self, emulator, population_size=100, num_generations=200, mutation_rate=0.01, elite_size=5, best_known_solution=0, **kwargs):
+    def __init__(self, emulator: PatheryEmulator, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0, **kwargs: Any) -> None:
         """
         Initializes the MemeticSolver.
 
@@ -27,7 +29,7 @@ class MemeticSolver(BaseSolver):
         self.elite_size = elite_size
         self.hill_climbing_restarts = kwargs.get("hill_climbing_restarts", 5)
 
-    def solve(self):
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
         Attempts to find the longest path using a memetic algorithm.
 

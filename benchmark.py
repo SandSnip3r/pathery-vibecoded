@@ -1,10 +1,11 @@
+from typing import List
 import time
 import logging
 import argparse
 import statistics
 from pathery_solver import solver_factory, load_puzzle, load_config
 
-def run_benchmarks(puzzles, solvers, num_runs):
+def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> None:
     """
     Runs benchmarks for given puzzles and solvers and generates a performance report.
     """

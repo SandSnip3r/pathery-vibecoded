@@ -1,6 +1,8 @@
 
 import random
 import math
+from typing import Tuple, List, Optional
+from pathery_emulator import PatheryEmulator
 from solvers.base_solver import BaseSolver
 
 class SimulatedAnnealingSolver(BaseSolver):
@@ -8,7 +10,7 @@ class SimulatedAnnealingSolver(BaseSolver):
     A solver that uses the simulated annealing algorithm.
     """
 
-    def __init__(self, emulator, initial_temp=1000, cooling_rate=0.003, best_known_solution=0):
+    def __init__(self, emulator: PatheryEmulator, initial_temp: float = 1000, cooling_rate: float = 0.003, best_known_solution: int = 0) -> None:
         """
         Initializes the SimulatedAnnealingSolver.
 
@@ -21,7 +23,7 @@ class SimulatedAnnealingSolver(BaseSolver):
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
 
-    def solve(self):
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
         Attempts to find the longest path using simulated annealing.
 

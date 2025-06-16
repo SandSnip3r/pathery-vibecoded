@@ -11,38 +11,38 @@ from solvers import (
 )
 
 class BaseSolverTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.config = load_config()
         self.game, self.best_known_solution = load_puzzle(
             self.config['puzzle_files']['puzzle_1']
         )
         logging.basicConfig(filename=self.config['log_files']['test'], level=logging.INFO, format='%(asctime)s - %(message)s')
 
-    def _test_solver(self, solver_name):
+    def _test_solver(self, solver_name: str) -> None:
         solver = solver_factory(solver_name, self.game, self.config, self.best_known_solution)
         best_path, best_path_length = solver.solve()
         self.assertIsNotNone(best_path)
         self.assertGreater(best_path_length, 0)
 
 class TestHillClimbingSolver(BaseSolverTest):
-    def test_solver(self):
+    def test_solver(self) -> None:
         self._test_solver("hill_climbing")
 
 class TestSimulatedAnnealingSolver(BaseSolverTest):
-    def test_solver(self):
+    def test_solver(self) -> None:
         self._test_solver("simulated_annealing")
 
 class TestHybridGeneticSolver(BaseSolverTest):
-    def test_solver(self):
+    def test_solver(self) -> None:
         self._test_solver("hybrid_genetic")
 
 class TestMemeticSolver(BaseSolverTest):
-    def test_solver(self):
+    def test_solver(self) -> None:
         self._test_solver("memetic")
 
 class TestPathery(unittest.TestCase):
 
-    def test_simple_path(self):
+    def test_simple_path(self) -> None:
         """
         Tests a simple path with a known length.
         """
@@ -53,7 +53,7 @@ class TestPathery(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertEqual(len(path), 9)
 
-    def test_path_with_obstacle(self):
+    def test_path_with_obstacle(self) -> None:
         """
         Tests a path with a simple obstacle.
         """
@@ -65,7 +65,7 @@ class TestPathery(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertEqual(len(path), 9)
 
-    def test_no_path(self):
+    def test_no_path(self) -> None:
         """
         Tests a puzzle with no possible path.
         """
@@ -78,7 +78,7 @@ class TestPathery(unittest.TestCase):
         path = game.find_path()
         self.assertIsNone(path)
 
-    def test_solver_bug_minimal(self):
+    def test_solver_bug_minimal(self) -> None:
         """
         A minimal test case to reproduce the solver bug.
         """
@@ -99,7 +99,7 @@ class TestPathery(unittest.TestCase):
         self.assertIsNotNone(final_path)
         self.assertEqual(best_path_length, len(final_path))
 
-    def test_checkpoint_path(self):
+    def test_checkpoint_path(self) -> None:
         """
         Tests a path with a single checkpoint.
         """
@@ -111,7 +111,7 @@ class TestPathery(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertEqual(len(path), 9)
 
-    def test_multiple_checkpoints(self):
+    def test_multiple_checkpoints(self) -> None:
         """
         Tests a path with multiple checkpoints that must be visited in order.
         """
@@ -124,7 +124,7 @@ class TestPathery(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertEqual(len(path), 9)
 
-    def test_closest_checkpoint(self):
+    def test_closest_checkpoint(self) -> None:
         """
         Tests that the path goes to the closest of two same-labeled checkpoints.
         """

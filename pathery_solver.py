@@ -2,7 +2,9 @@
 import json
 import logging
 import argparse
+from typing import Dict, Any, Tuple
 from pathery_emulator import PatheryEmulator
+from solvers.base_solver import BaseSolver
 from solvers import (
     HillClimbingSolver,
     SimulatedAnnealingSolver,
@@ -10,11 +12,11 @@ from solvers import (
     MemeticSolver,
 )
 
-def load_config(path='config.json'):
+def load_config(path: str = 'config.json') -> Dict[str, Any]:
     with open(path, 'r') as f:
         return json.load(f)
 
-def solver_factory(solver_name, emulator, config, best_known_solution=0):
+def solver_factory(solver_name: str, emulator: PatheryEmulator, config: Dict[str, Any], best_known_solution: int = 0) -> BaseSolver:
     """
     Creates a solver instance from a name and configuration.
     """
@@ -36,7 +38,7 @@ def solver_factory(solver_name, emulator, config, best_known_solution=0):
 
     return solver_class(emulator, **solver_config)
 
-def load_puzzle(file_path):
+def load_puzzle(file_path: str) -> Tuple[PatheryEmulator, int]:
     """
     Loads a puzzle from a JSON file.
 

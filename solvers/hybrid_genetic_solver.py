@@ -2,14 +2,16 @@
 import random
 import logging
 from multiprocessing import Pool
+from typing import List, Tuple, Optional
+from pathery_emulator import PatheryEmulator
 from solvers.base_solver import BaseSolver
 
-def _init_worker(emulator):
+def _init_worker(emulator: PatheryEmulator) -> None:
     global solver
     # This is a simplified solver for the worker process
     solver = BaseSolver(emulator)
 
-def _calculate_fitness(individual):
+def _calculate_fitness(individual: List[Tuple[int, int]]) -> Tuple[int, List[Tuple[int, int]]]:
     
     solver._clear_walls()
     for x, y in individual:
@@ -25,7 +27,7 @@ class HybridGeneticSolver(BaseSolver):
     A solver that uses a hybrid genetic algorithm.
     """
 
-    def __init__(self, emulator, population_size=100, num_generations=200, mutation_rate=0.01, elite_size=5, best_known_solution=0):
+    def __init__(self, emulator: PatheryEmulator, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0) -> None:
         """
         Initializes the HybridGeneticSolver.
 
@@ -44,7 +46,7 @@ class HybridGeneticSolver(BaseSolver):
         self.elite_size = elite_size
         self.best_known_solution = best_known_solution
 
-    def solve(self):
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
         Attempts to find the longest path using a hybrid genetic algorithm.
 
@@ -115,7 +117,7 @@ class HybridGeneticSolver(BaseSolver):
 
         return best_individual, best_path_length
 
-    def _select_parents(self, population, fitness_scores):
+    def _select_parents(self, population: List[List[Tuple[int, int]]], fitness_scores: List[int]) -> List[List[Tuple[int, int]]]:
         # Roulette wheel selection
         parents = []
         total_fitness = sum(fitness_scores)
@@ -133,7 +135,7 @@ class HybridGeneticSolver(BaseSolver):
                     break
         return parents
 
-    def _crossover(self, parent1, parent2, num_walls):
+    def _crossover(self, parent1: List[Tuple[int, int]], parent2: List[Tuple[int, int]], num_walls: int) -> List[Tuple[int, int]]:
         child = []
         
         # Uniform crossover
@@ -156,7 +158,7 @@ class HybridGeneticSolver(BaseSolver):
                 
         return child
 
-    def _mutate(self, individual, mutation_rate):
+    def _mutate(self, individual: List[Tuple[int, int]], mutation_rate: float) -> None:
         for i in range(len(individual)):
             if random.random() < mutation_rate:
                 while True:

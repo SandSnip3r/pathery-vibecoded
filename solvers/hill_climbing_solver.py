@@ -1,5 +1,7 @@
 
 import random
+from typing import List, Tuple, Optional
+from pathery_emulator import PatheryEmulator
 from solvers.base_solver import BaseSolver
 
 class HillClimbingSolver(BaseSolver):
@@ -7,7 +9,7 @@ class HillClimbingSolver(BaseSolver):
     A solver that uses the hill-climbing algorithm.
     """
 
-    def __init__(self, emulator, num_restarts=10, best_known_solution=0):
+    def __init__(self, emulator: PatheryEmulator, num_restarts: int = 10, best_known_solution: int = 0) -> None:
         """
         Initializes the HillClimbingSolver.
 
@@ -18,7 +20,7 @@ class HillClimbingSolver(BaseSolver):
         super().__init__(emulator, best_known_solution)
         self.num_restarts = num_restarts
 
-    def solve(self):
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
         Attempts to find the longest path using a hill-climbing algorithm.
 
@@ -46,7 +48,7 @@ class HillClimbingSolver(BaseSolver):
 
         return best_path, best_path_length
 
-    def _hill_climb_optimizer(self, num_walls, max_steps=5, num_samples=5):
+    def _hill_climb_optimizer(self, num_walls: int, max_steps: int = 5, num_samples: int = 5) -> Tuple[Optional[List[Tuple[int, int]]], int, List[Tuple[int, int]]]:
         """
         Optimizes a single wall configuration by hill climbing.
         """

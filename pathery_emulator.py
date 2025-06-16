@@ -1,12 +1,14 @@
 import heapq
 from pathery_pathfinding import find_path_cpp
 
+from typing import List, Tuple, Optional
+
 class PatheryEmulator:
     """
     A text-based emulator for the Pathery puzzle game.
     """
 
-    def __init__(self, width, height, num_walls):
+    def __init__(self, width: int, height: int, num_walls: int) -> None:
         """
         Initializes the Pathery emulator with a grid of the specified dimensions.
 
@@ -22,13 +24,13 @@ class PatheryEmulator:
         self.finish = None
         self.checkpoints = []
 
-    def get_num_walls(self):
+    def get_num_walls(self) -> int:
         """
         Counts the number of walls currently on the grid.
         """
         return sum(row.count('#') for row in self.grid)
 
-    def set_start(self, x, y):
+    def set_start(self, x: int, y: int) -> None:
         """
         Sets the starting position on the grid.
 
@@ -44,7 +46,7 @@ class PatheryEmulator:
         else:
             raise ValueError("Start position is out of bounds.")
 
-    def set_finish(self, x, y):
+    def set_finish(self, x: int, y: int) -> None:
         """
         Sets the finishing position on the grid.
 
@@ -60,7 +62,7 @@ class PatheryEmulator:
         else:
             raise ValueError("Finish position is out of bounds.")
 
-    def add_rock(self, x, y):
+    def add_rock(self, x: int, y: int) -> None:
         """
         Adds a rock to the grid. Rocks are permanent obstacles.
 
@@ -74,7 +76,7 @@ class PatheryEmulator:
         else:
             raise ValueError("Rock position is out of bounds.")
 
-    def add_wall(self, x, y):
+    def add_wall(self, x: int, y: int) -> None:
         """
         Adds a wall to the grid.
 
@@ -90,7 +92,7 @@ class PatheryEmulator:
         else:
             raise ValueError("Wall position is out of bounds.")
 
-    def remove_wall(self, x, y):
+    def remove_wall(self, x: int, y: int) -> None:
         """
         Removes a wall from the grid.
 
@@ -104,7 +106,7 @@ class PatheryEmulator:
         else:
             raise ValueError("Wall position is out of bounds.")
 
-    def add_checkpoint(self, x, y, label):
+    def add_checkpoint(self, x: int, y: int, label: str) -> None:
         """
         Adds a checkpoint to the grid.
 
@@ -122,7 +124,7 @@ class PatheryEmulator:
 
     
 
-    def find_path(self):
+    def find_path(self) -> Optional[List[Tuple[int, int]]]:
         """
         Finds the path from the start to the finish, visiting checkpoints in order.
         """
@@ -178,7 +180,7 @@ class PatheryEmulator:
         total_path.extend(final_segment)
         return total_path
 
-    def draw_path(self, path):
+    def draw_path(self, path: List[Tuple[int, int]]) -> None:
         """
         Draws the given path on the grid.
 
@@ -195,7 +197,7 @@ class PatheryEmulator:
                 if self.grid[y][x] == ' ':
                     self.grid[y][x] = '.'
 
-    def display(self):
+    def display(self) -> None:
         """
         Displays the current state of the grid with a border.
         """
