@@ -1,42 +1,61 @@
 import time
 import logging
+import argparse
+import statistics
 from pathery_solver import solver_factory, load_puzzle, load_config
 
-def run_benchmark():
+def run_benchmarks(puzzles, solvers, num_runs):
     """
-    Runs the full solver and logs the execution time and final path length.
+    Runs benchmarks for given puzzles and solvers and generates a performance report.
     """
-    # Load configuration
     config = load_config()
+    log_file = config['log_files']['benchmark']
+    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
-    # Configure logging
-    logging.basicConfig(filename=config['log_files']['benchmark'], level=logging.INFO, format='%(asctime)s - %(message)s')
+    with open("benchmarks/solver_performance.md", "w") as f:
+        f.write("# Solver Performance\n\n")
+        f.write(f"This document records the performance of the different solvers on all puzzles. The results are based on {num_runs} runs for each solver on each puzzle.\n")
 
-    # Load the puzzle
-    puzzle_file = config['puzzle_files']['puzzle_2']
-    game, best_known_solution = load_puzzle(puzzle_file)
+    for puzzle_name in puzzles:
+        with open("benchmarks/solver_performance.md", "a") as f:
+            f.write(f"\n## {puzzle_name}\n\n")
+            f.write("| Solver | Min Path | Max Path | Mean Path | Mean Duration (s) |\n")
+            f.write("|---|---|---|---|---|\n")
 
-    # Create a solver
-    solver = solver_factory("memetic", game, config, best_known_solution)
+        for solver_name in solvers:
+            path_lengths = []
+            durations = []
 
-    # Time the full solver
-    start_time = time.time()
-    
-    best_path, best_path_length = solver.solve()
+            print(f"Running benchmark for {solver_name} on {puzzle_name}...")
+            for i in range(num_runs):
+                print(f"  Run {i+1}/{num_runs}...")
+                game, best_known_solution = load_puzzle(config['puzzle_files'][puzzle_name])
+                solver = solver_factory(solver_name, game, config, best_known_solution)
 
-    end_time = time.time()
-    duration = end_time - start_time
-    
-    logging.info(f"Benchmark Result: Final path length of {best_path_length} in {duration:.4f} seconds.")
-    logging.getLogger().handlers[0].flush()
-    print(f"Benchmark Result: Final path length of {best_path_length} in {duration:.4f} seconds.")
+                start_time = time.time()
+                _, best_path_length = solver.solve()
+                end_time = time.time()
 
-    if best_path:
-        print("Solution found:")
-        game.draw_path(best_path)
-        game.display()
-    else:
-        print("No path found.")
+                path_lengths.append(best_path_length)
+                durations.append(end_time - start_time)
+
+            min_path = min(path_lengths) if path_lengths else 0
+            max_path = max(path_lengths) if path_lengths else 0
+            mean_path = statistics.mean(path_lengths) if path_lengths else 0
+            mean_duration = statistics.mean(durations) if durations else 0
+
+            result = f"| {solver_name} | {min_path} | {max_path} | {mean_path:.2f} | {mean_duration:.4f} |"
+            
+            with open("benchmarks/solver_performance.md", "a") as f:
+                f.write(result + "\n")
+            
+            logging.info(f"Benchmark Result for {puzzle_name} with {solver_name}: {result}")
+            print(f"Benchmark complete for {solver_name} on {puzzle_name}.")
 
 if __name__ == '__main__':
-    run_benchmark()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--puzzles", nargs='+', default=['puzzle_1', 'puzzle_2', 'puzzle_3', 'puzzle_4'], help="The names of the puzzles to solve.")
+    parser.add_argument("--solvers", nargs='+', default=['hill_climbing', 'simulated_annealing', 'hybrid_genetic', 'memetic'], help="The solvers to use.")
+    parser.add_argument("--num_runs", type=int, default=5, help="The number of times to run the benchmark for each solver.")
+    args = parser.parse_args()
+    run_benchmarks(args.puzzles, args.solvers, args.num_runs)

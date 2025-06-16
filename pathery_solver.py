@@ -56,16 +56,25 @@ def load_puzzle(file_path):
     for rock in puzzle_data['rocks']:
         game.add_rock(rock[0], rock[1])
 
+    if 'checkpoints' in puzzle_data:
+        for checkpoint in puzzle_data['checkpoints']:
+            game.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
+
     return game, puzzle_data['best_solution']
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("puzzle_name", help="The name of the puzzle to solve (e.g., puzzle_1).")
     parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic).")
+    parser.add_argument("--num_generations", type=int, help="Number of generations for genetic algorithms.")
     args = parser.parse_args()
 
     # Load configuration
     config = load_config()
+
+    # Override config with command-line arguments if provided
+    if args.num_generations and args.solver in config['solvers'] and 'num_generations' in config['solvers'][args.solver]:
+        config['solvers'][args.solver]['num_generations'] = args.num_generations
     
     # Configure logging
     logging.basicConfig(filename=config['log_files']['solver'], level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -82,7 +91,7 @@ if __name__ == '__main__':
 
     if best_path:
         print(f"Best path found with length: {best_path_length}")
-        if best_path_length > best_known_solution:
+        if best_known_solution == 0 or best_path_length > best_known_solution:
             print("New best solution found!")
         game.draw_path(best_path)
         game.display()

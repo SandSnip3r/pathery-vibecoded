@@ -99,5 +99,45 @@ class TestPathery(unittest.TestCase):
         self.assertIsNotNone(final_path)
         self.assertEqual(best_path_length, len(final_path))
 
+    def test_checkpoint_path(self):
+        """
+        Tests a path with a single checkpoint.
+        """
+        game = PatheryEmulator(5, 5, 0)
+        game.set_start(0, 0)
+        game.set_finish(4, 4)
+        game.add_checkpoint(2, 2, 'A')
+        path = game.find_path()
+        self.assertIsNotNone(path)
+        self.assertEqual(len(path), 9)
+
+    def test_multiple_checkpoints(self):
+        """
+        Tests a path with multiple checkpoints that must be visited in order.
+        """
+        game = PatheryEmulator(5, 5, 0)
+        game.set_start(0, 0)
+        game.set_finish(4, 4)
+        game.add_checkpoint(1, 1, 'A')
+        game.add_checkpoint(3, 3, 'B')
+        path = game.find_path()
+        self.assertIsNotNone(path)
+        self.assertEqual(len(path), 9)
+
+    def test_closest_checkpoint(self):
+        """
+        Tests that the path goes to the closest of two same-labeled checkpoints.
+        """
+        game = PatheryEmulator(5, 5, 0)
+        game.set_start(0, 0)
+        game.set_finish(4, 4)
+        game.add_checkpoint(1, 1, 'A')
+        game.add_checkpoint(3, 0, 'A')
+        path = game.find_path()
+        self.assertIsNotNone(path)
+        # Path should go to (1,1) then to (4,4), length 9
+        # Path to (3,0) is 4, then to (4,4) is 6, total 10
+        self.assertEqual(len(path), 9)
+
 if __name__ == '__main__':
     unittest.main()
