@@ -85,19 +85,28 @@ class PatherySolver:
                     if self.emulator.grid[y][x] == '#':
                         wall_positions.append((x, y))
 
-            # Get empty squares adjacent to the current path
-            path_neighbors = set()
-            for x_path, y_path in current_path:
-                for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-                    nx, ny = x_path + dx, y_path + dy
-                    if 0 <= nx < self.emulator.width and 0 <= ny < self.emulator.height and self.emulator.grid[ny][nx] == ' ':
-                        path_neighbors.add((nx, ny))
-            
-            if not path_neighbors:
+            # Get all empty squares
+            empty_squares = []
+            for y in range(self.emulator.height):
+                for x in range(self.emulator.width):
+                    if self.emulator.grid[y][x] == ' ':
+                        empty_squares.append((x, y))
+
+            if not empty_squares:
+                break
+
+            # Get all empty squares
+            empty_squares = []
+            for y in range(self.emulator.height):
+                for x in range(self.emulator.width):
+                    if self.emulator.grid[y][x] == ' ':
+                        empty_squares.append((x, y))
+
+            if not empty_squares:
                 break
 
             for x_wall, y_wall in wall_positions:
-                for x_new, y_new in random.sample(list(path_neighbors), min(len(path_neighbors), num_samples)):
+                for x_new, y_new in random.sample(empty_squares, min(len(empty_squares), num_samples)):
                     self.emulator.remove_wall(x_wall, y_wall)
                     self.emulator.add_wall(x_new, y_new)
 
@@ -217,7 +226,7 @@ class PatherySolver:
 
         return best_path, best_path_length
 
-    def solve_hybrid_genetic_algorithm(self, num_walls, population_size, num_generations, mutation_rate, elite_size):
+    def solve_hybrid_genetic_algorithm(self, num_walls, population_size, num_generations, mutation_rate, elite_size, best_known_solution):
         """
         Attempts to find the longest path using a hybrid genetic algorithm.
 
@@ -270,6 +279,14 @@ class PatherySolver:
                 if score > best_path_length:
                     best_path_length = score
                     best_individual = optimized_individuals[i]
+                    if best_known_solution > 0 and best_path_length >= best_known_solution:
+                        logging.info(f"Optimal solution found with length: {best_path_length}. Exiting early.")
+                        # Restore the best grid found
+                        if best_individual:
+                            self._clear_walls()
+                            for x, y in best_individual:
+                                self.emulator.add_wall(x, y)
+                        return best_individual, best_path_length
 
             # Select parents and carry over elites
             sorted_population = [x for _, x in sorted(zip(optimized_individuals, optimized_individuals), key=lambda pair: pair[0], reverse=True)]
@@ -292,7 +309,37 @@ class PatherySolver:
             for x, y in best_individual:
                 self.emulator.add_wall(x, y)
 
-        return self.emulator.find_path(), best_path_length
+        return best_individual, best_path_length
+
+    def solve_memetic_algorithm(self, num_walls, population_size, num_generations, mutation_rate, elite_size, best_known_solution):
+        """
+        Attempts to find the longest path using a memetic algorithm.
+
+        Args:
+            num_walls (int): The number of walls to place.
+            population_size (int): The size of the population in each generation.
+            num_generations (int): The number of generations to run.
+            mutation_rate (float): The probability of a mutation occurring.
+            elite_size (int): The number of top individuals to carry over to the next generation.
+
+        Returns:
+            tuple: A tuple containing the best path found and its length.
+        """
+        # First, run the genetic algorithm to find a good starting solution
+        best_individual, _ = self.solve_hybrid_genetic_algorithm(num_walls, population_size, num_generations, mutation_rate, elite_size, best_known_solution)
+
+        # If the genetic algorithm didn't find a solution, return
+        if not best_individual:
+            return None, 0
+
+        # Now, refine the best solution using hill climbing
+        self._clear_walls()
+        for x, y in best_individual:
+            self.emulator.add_wall(x, y)
+
+        best_path, best_path_length, _ = self._hill_climb_optimizer(num_walls)
+
+        return best_path, best_path_length
 
     def _select_parents(self, population, fitness_scores):
         # Roulette wheel selection
@@ -316,7 +363,7 @@ class PatherySolver:
         child = []
         
         # Uniform crossover
-        for i in range(num_walls):
+        for i in range(min(len(parent1), len(parent2))):
             if random.random() < 0.5:
                 gene = parent1[i]
             else:
@@ -390,8 +437,8 @@ if __name__ == '__main__':
     # Create a solver
     solver = PatherySolver(game)
 
-    # Find the best path using a hybrid genetic algorithm
-    best_path, best_path_length = solver.solve_hybrid_genetic_algorithm(game.num_walls, 100, args.generations, 0.01, 5)
+    # Find the best path using a memetic algorithm
+    best_path, best_path_length = solver.solve_memetic_algorithm(game.num_walls, 100, args.generations, 0.01, 5, best_known_solution)
 
     if best_path:
         print(f"Best path found with length: {best_path_length}")
