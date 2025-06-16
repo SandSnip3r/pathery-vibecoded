@@ -2,7 +2,7 @@
 
 ## Core Objective
 
-The main goal in Pathery is to create the longest possible path from a starting point to a finishing point on a grid. This is done by placing a limited number of "walls" to guide a pathfinding AI.
+The main goal in Pathery is to create the longest possible path from a starting point to a finishing point on a grid. Puzzles can have multiple starts and multiple goals. This is done by placing a limited number of "walls" to guide a pathfinding AI.
 
 ## Pathfinding AI
 
@@ -25,7 +25,7 @@ As you progress, the game introduces new elements:
 
 *   **Ice Tiles:** The pathfinding AI will prioritize moving onto ice tiles to find the shortest route. You must strategically place walls to work around this behavior.
 *   **Portals:** The path can enter one portal and exit another, adding another layer of complexity to path calculation.
-*   **Checkpoints:** Some maps have checkpoints that the path must visit in a specific order. The AI is "greedy," meaning it will always go to the next checkpoint using the shortest path, without considering the overall path length to the final destination.
+*   **Checkpoints:** Checkpoints are capital letters from A to N. There can exist multiple instances of the same checkpoint. If multiple instances exist, the pathfinding algorithm always finds the shortest path from the current position to the nearest checkpoint, and then repeats, until finally find the shortest path to the nearest goal.
 
 ## Scoring
 
