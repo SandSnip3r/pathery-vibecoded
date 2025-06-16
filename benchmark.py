@@ -1,31 +1,28 @@
 import time
 import logging
-from pathery_solver import PatherySolver, load_puzzle
-
-# Configure logging
-logging.basicConfig(filename='/usr/local/google/home/victorstone/pathery_project/benchmark_results.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+from pathery_solver import solver_factory, load_puzzle, load_config
 
 def run_benchmark():
     """
     Runs the full solver and logs the execution time and final path length.
     """
+    # Load configuration
+    config = load_config()
+
+    # Configure logging
+    logging.basicConfig(filename=config['log_files']['benchmark'], level=logging.INFO, format='%(asctime)s - %(message)s')
+
     # Load the puzzle
-    puzzle_file = '/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_2.json'
-    game, _ = load_puzzle(puzzle_file)
+    puzzle_file = config['puzzle_files']['puzzle_2']
+    game, best_known_solution = load_puzzle(puzzle_file)
 
     # Create a solver
-    solver = PatherySolver(game)
+    solver = solver_factory("memetic", game, config, best_known_solution)
 
     # Time the full solver
     start_time = time.time()
     
-    best_path, best_path_length = solver.solve_hybrid_genetic_algorithm(
-        game.num_walls,
-        100, # population_size
-        50,  # num_generations
-        0.1, # mutation_rate
-        5    # elite_size
-    )
+    best_path, best_path_length = solver.solve()
 
     end_time = time.time()
     duration = end_time - start_time

@@ -8,7 +8,7 @@ class MemeticSolver(BaseSolver):
     A solver that uses a memetic algorithm.
     """
 
-    def __init__(self, emulator, population_size=100, num_generations=200, mutation_rate=0.01, elite_size=5, best_known_solution=0):
+    def __init__(self, emulator, population_size=100, num_generations=200, mutation_rate=0.01, elite_size=5, best_known_solution=0, **kwargs):
         """
         Initializes the MemeticSolver.
 
@@ -20,12 +20,12 @@ class MemeticSolver(BaseSolver):
             elite_size (int): The number of top individuals to carry over to the next generation.
             best_known_solution (int): The best known solution length.
         """
-        super().__init__(emulator)
+        super().__init__(emulator, best_known_solution)
         self.population_size = population_size
         self.num_generations = num_generations
         self.mutation_rate = mutation_rate
         self.elite_size = elite_size
-        self.best_known_solution = best_known_solution
+        self.hill_climbing_restarts = kwargs.get("hill_climbing_restarts", 5)
 
     def solve(self):
         """
@@ -54,7 +54,7 @@ class MemeticSolver(BaseSolver):
         for x, y in best_individual:
             self.emulator.add_wall(x, y)
 
-        hill_climbing_solver = HillClimbingSolver(self.emulator)
+        hill_climbing_solver = HillClimbingSolver(self.emulator, num_restarts=self.hill_climbing_restarts)
         best_path, best_path_length, _ = hill_climbing_solver._hill_climb_optimizer(self.emulator.num_walls)
 
         return best_path, best_path_length

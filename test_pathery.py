@@ -2,7 +2,7 @@
 import unittest
 import logging
 from pathery_emulator import PatheryEmulator
-from pathery_solver import load_puzzle
+from pathery_solver import load_puzzle, solver_factory, load_config
 from solvers import (
     HillClimbingSolver,
     SimulatedAnnealingSolver,
@@ -10,38 +10,35 @@ from solvers import (
     MemeticSolver,
 )
 
-logging.basicConfig(filename='/usr/local/google/home/victorstone/pathery_project/test.log', level=logging.INFO, format='%(asctime)s - %(message)s')
-
 class BaseSolverTest(unittest.TestCase):
     def setUp(self):
+        self.config = load_config()
         self.game, self.best_known_solution = load_puzzle(
-            '/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_1.json'
+            self.config['puzzle_files']['puzzle_1']
         )
+        logging.basicConfig(filename=self.config['log_files']['test'], level=logging.INFO, format='%(asctime)s - %(message)s')
 
-    def _test_solver(self, solver):
+    def _test_solver(self, solver_name):
+        solver = solver_factory(solver_name, self.game, self.config, self.best_known_solution)
         best_path, best_path_length = solver.solve()
         self.assertIsNotNone(best_path)
         self.assertGreater(best_path_length, 0)
 
 class TestHillClimbingSolver(BaseSolverTest):
     def test_solver(self):
-        solver = HillClimbingSolver(self.game)
-        self._test_solver(solver)
+        self._test_solver("hill_climbing")
 
 class TestSimulatedAnnealingSolver(BaseSolverTest):
     def test_solver(self):
-        solver = SimulatedAnnealingSolver(self.game)
-        self._test_solver(solver)
+        self._test_solver("simulated_annealing")
 
 class TestHybridGeneticSolver(BaseSolverTest):
     def test_solver(self):
-        solver = HybridGeneticSolver(self.game, num_generations=5)
-        self._test_solver(solver)
+        self._test_solver("hybrid_genetic")
 
 class TestMemeticSolver(BaseSolverTest):
     def test_solver(self):
-        solver = MemeticSolver(self.game, num_generations=5)
-        self._test_solver(solver)
+        self._test_solver("memetic")
 
 class TestPathery(unittest.TestCase):
 
@@ -85,9 +82,10 @@ class TestPathery(unittest.TestCase):
         """
         A minimal test case to reproduce the solver bug.
         """
-        game, _ = load_puzzle('/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_1.json')
+        config = load_config()
+        game, _ = load_puzzle(config['puzzle_files']['puzzle_1'])
         
-        solver = HybridGeneticSolver(game, population_size=10, num_generations=5, mutation_rate=0.1, elite_size=2)
+        solver = solver_factory("hybrid_genetic", game, config)
         best_walls, best_path_length = solver.solve()
         
         self.assertIsNotNone(best_walls)

@@ -8,7 +8,7 @@ class SimulatedAnnealingSolver(BaseSolver):
     A solver that uses the simulated annealing algorithm.
     """
 
-    def __init__(self, emulator, initial_temp=1000, cooling_rate=0.003):
+    def __init__(self, emulator, initial_temp=1000, cooling_rate=0.003, best_known_solution=0):
         """
         Initializes the SimulatedAnnealingSolver.
 
@@ -17,7 +17,7 @@ class SimulatedAnnealingSolver(BaseSolver):
             initial_temp (float): The initial temperature.
             cooling_rate (float): The rate at which the temperature cools.
         """
-        super().__init__(emulator)
+        super().__init__(emulator, best_known_solution)
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
 

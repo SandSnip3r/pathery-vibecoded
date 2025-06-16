@@ -7,7 +7,7 @@ class HillClimbingSolver(BaseSolver):
     A solver that uses the hill-climbing algorithm.
     """
 
-    def __init__(self, emulator, num_restarts=10):
+    def __init__(self, emulator, num_restarts=10, best_known_solution=0):
         """
         Initializes the HillClimbingSolver.
 
@@ -15,7 +15,7 @@ class HillClimbingSolver(BaseSolver):
             emulator (PatheryEmulator): An instance of the PatheryEmulator.
             num_restarts (int): The number of times to restart the algorithm.
         """
-        super().__init__(emulator)
+        super().__init__(emulator, best_known_solution)
         self.num_restarts = num_restarts
 
     def solve(self):

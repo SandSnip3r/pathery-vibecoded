@@ -1,0 +1,34 @@
+{
+  "puzzle_files": {
+    "puzzle_1": "puzzles/puzzle_1.json",
+    "puzzle_2": "puzzles/puzzle_2.json",
+    "puzzle_3": "puzzles/puzzle_3.json"
+  },
+  "log_files": {
+    "solver": "solver.log",
+    "benchmark": "benchmark_results.log",
+    "test": "test.log"
+  },
+  "solvers": {
+    "hill_climbing": {
+      "num_restarts": 10
+    },
+    "simulated_annealing": {
+      "initial_temp": 1000,
+      "cooling_rate": 0.003
+    },
+    "hybrid_genetic": {
+      "population_size": 100,
+      "num_generations": 200,
+      "mutation_rate": 0.01,
+      "elite_size": 5
+    },
+    "memetic": {
+      "population_size": 100,
+      "num_generations": 200,
+      "mutation_rate": 0.01,
+      "elite_size": 5,
+      "hill_climbing_restarts": 5
+    }
+  }
+}

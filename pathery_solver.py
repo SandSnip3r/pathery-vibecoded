@@ -10,7 +10,31 @@ from solvers import (
     MemeticSolver,
 )
 
-logging.basicConfig(filename='/usr/local/google/home/victorstone/pathery_project/solver.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+def load_config(path='config.json'):
+    with open(path, 'r') as f:
+        return json.load(f)
+
+def solver_factory(solver_name, emulator, config, best_known_solution=0):
+    """
+    Creates a solver instance from a name and configuration.
+    """
+    solver_class = {
+        "hill_climbing": HillClimbingSolver,
+        "simulated_annealing": SimulatedAnnealingSolver,
+        "hybrid_genetic": HybridGeneticSolver,
+        "memetic": MemeticSolver,
+    }.get(solver_name)
+
+    if not solver_class:
+        raise ValueError(f"Unknown solver: {solver_name}")
+
+    solver_config = config['solvers'].get(solver_name, {})
+    
+    # Add best_known_solution to solver_config if it's a relevant parameter
+    if "best_known_solution" in solver_class.__init__.__code__.co_varnames:
+        solver_config["best_known_solution"] = best_known_solution
+
+    return solver_class(emulator, **solver_config)
 
 def load_puzzle(file_path):
     """
@@ -36,28 +60,22 @@ def load_puzzle(file_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("puzzle_file", help="The path to the puzzle file.")
+    parser.add_argument("puzzle_name", help="The name of the puzzle to solve (e.g., puzzle_1).")
     parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic).")
-    parser.add_argument("--generations", type=int, default=200, help="The number of generations to run for genetic algorithms.")
-    parser.add_argument("--restarts", type=int, default=10, help="The number of restarts for the hill climbing solver.")
-    parser.add_argument("--cooling_rate", type=float, default=0.003, help="The cooling rate for the simulated annealing solver.")
     args = parser.parse_args()
 
+    # Load configuration
+    config = load_config()
+    
+    # Configure logging
+    logging.basicConfig(filename=config['log_files']['solver'], level=logging.INFO, format='%(asctime)s - %(message)s')
+
     # Load the puzzle
-    game, best_known_solution = load_puzzle(args.puzzle_file)
+    puzzle_file = config['puzzle_files'][args.puzzle_name]
+    game, best_known_solution = load_puzzle(puzzle_file)
 
     # Create a solver
-    if args.solver == "hill_climbing":
-        solver = HillClimbingSolver(game, num_restarts=args.restarts)
-    elif args.solver == "simulated_annealing":
-        solver = SimulatedAnnealingSolver(game, cooling_rate=args.cooling_rate)
-    elif args.solver == "hybrid_genetic":
-        solver = HybridGeneticSolver(game, num_generations=args.generations, best_known_solution=best_known_solution)
-    elif args.solver == "memetic":
-        solver = MemeticSolver(game, num_generations=args.generations, best_known_solution=best_known_solution)
-    else:
-        print(f"Unknown solver: {args.solver}")
-        exit(1)
+    solver = solver_factory(args.solver, game, config, best_known_solution)
 
     # Find the best path
     best_path, best_path_length = solver.solve()

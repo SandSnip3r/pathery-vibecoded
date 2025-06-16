@@ -6,14 +6,16 @@ class BaseSolver:
     A base class for Pathery solvers.
     """
 
-    def __init__(self, emulator):
+    def __init__(self, emulator, best_known_solution=0):
         """
         Initializes the BaseSolver.
 
         Args:
             emulator (PatheryEmulator): An instance of the PatheryEmulator.
+            best_known_solution (int): The best known solution length.
         """
         self.emulator = emulator
+        self.best_known_solution = best_known_solution
 
     def solve(self):
         """

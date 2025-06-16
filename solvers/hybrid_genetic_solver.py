@@ -66,46 +66,46 @@ class HybridGeneticSolver(BaseSolver):
                         wall_positions.append((x, y))
             population.append(wall_positions)
 
-        for generation in range(self.num_generations):
-            # Dynamic mutation rate
-            current_mutation_rate = max(0.01, self.mutation_rate * (0.95 ** generation))
+        with Pool(initializer=_init_worker, initargs=(self.emulator,)) as pool:
+            for generation in range(self.num_generations):
+                # Dynamic mutation rate
+                current_mutation_rate = max(0.01, self.mutation_rate * (0.95 ** generation))
 
-            logging.info(f"Generation {generation + 1}/{self.num_generations}, Best score so far: {best_path_length}, Mutation rate: {current_mutation_rate:.4f}")
-            logging.getLogger().handlers[0].flush()
-            
-            # Asynchronously calculate fitness for the population
-            with Pool(initializer=_init_worker, initargs=(self.emulator,)) as pool:
+                logging.info(f"Generation {generation + 1}/{self.num_generations}, Best score so far: {best_path_length}, Mutation rate: {current_mutation_rate:.4f}")
+                logging.getLogger().handlers[0].flush()
+                
+                # Asynchronously calculate fitness for the population
                 results = pool.map(_calculate_fitness, population)
 
-            fitness_scores, optimized_individuals = zip(*results)
+                fitness_scores, optimized_individuals = zip(*results)
 
-            for i, score in enumerate(fitness_scores):
-                if score > best_path_length:
-                    best_path_length = score
-                    best_individual = optimized_individuals[i]
-                    if self.best_known_solution > 0 and best_path_length >= self.best_known_solution:
-                        logging.info(f"Optimal solution found with length: {best_path_length}. Exiting early.")
-                        # Restore the best grid found
-                        if best_individual:
-                            self._clear_walls()
-                            for x, y in best_individual:
-                                self.emulator.add_wall(x, y)
-                        return best_individual, best_path_length
+                for i, score in enumerate(fitness_scores):
+                    if score > best_path_length:
+                        best_path_length = score
+                        best_individual = optimized_individuals[i]
+                        if self.best_known_solution > 0 and best_path_length >= self.best_known_solution:
+                            logging.info(f"Optimal solution found with length: {best_path_length}. Exiting early.")
+                            # Restore the best grid found
+                            if best_individual:
+                                self._clear_walls()
+                                for x, y in best_individual:
+                                    self.emulator.add_wall(x, y)
+                            return best_individual, best_path_length
 
-            # Select parents and carry over elites
-            sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0], reverse=True)]
-            elites = sorted_population[:self.elite_size]
-            parents = self._select_parents(population, fitness_scores)
+                # Select parents and carry over elites
+                sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0], reverse=True)]
+                elites = sorted_population[:self.elite_size]
+                parents = self._select_parents(population, fitness_scores)
 
-            # Create new population
-            new_population = elites
-            for _ in range(self.population_size - self.elite_size):
-                parent1, parent2 = random.choices(parents, k=2)
-                child = self._crossover(parent1, parent2, self.emulator.num_walls)
-                self._mutate(child, current_mutation_rate)
-                new_population.append(child)
+                # Create new population
+                new_population = elites
+                for _ in range(self.population_size - self.elite_size):
+                    parent1, parent2 = random.choices(parents, k=2)
+                    child = self._crossover(parent1, parent2, self.emulator.num_walls)
+                    self._mutate(child, current_mutation_rate)
+                    new_population.append(child)
 
-            population = new_population
+                population = new_population
 
         # Restore the best grid found
         if best_individual:
