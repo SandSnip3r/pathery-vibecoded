@@ -1,7 +1,5 @@
 # Pathery Puzzle Solver
 
-> **Important Note for Developers:** All Python and pip commands for this project **must** be executed using the executables in the `venv/bin` directory (e.g., `venv/bin/python` and `venv/bin/pip`). This ensures that you are using the correct dependencies and that your changes do not affect other Python projects on your system.
-
 This project is a high-performance, Python-based command-line application designed to programmatically solve puzzles from the game Pathery. It uses a variety of sophisticated solver algorithms, with its most computationally intensive components offloaded to C++, to find optimal or near-optimal solutions for a given puzzle layout.
 
 ## Key Features
@@ -41,11 +39,14 @@ This project is a high-performance, Python-based command-line application design
     ```bash
     python3 -m venv venv
     ```
-
-2.  **Install Dependencies and Compile the C++ Module:**
+2.  **Activate the virtual environment:**
     ```bash
-    venv/bin/pip install -r requirements.txt
-    venv/bin/python setup.py install
+    source venv/bin/activate
+    ```
+3.  **Install Dependencies and Compile the C++ Module:**
+    ```bash
+    pip install -r requirements.txt
+    python setup.py install
     ```
 
 ## Usage
@@ -55,7 +56,7 @@ This project is a high-performance, Python-based command-line application design
 To run the solver on a specific puzzle, provide the name of the puzzle file and optionally specify a solver.
 
 ```bash
-venv/bin/python pathery_solver.py puzzle_1 --solver memetic
+python pathery_solver.py puzzle_1 --solver memetic
 ```
 
 The following solvers are available:
@@ -69,7 +70,7 @@ The following solvers are available:
 To run the unit tests, execute the `test_pathery.py` script.
 
 ```bash
-venv/bin/python test_pathery.py
+python test_pathery.py
 ```
 
 ### Running Benchmarks
@@ -77,7 +78,7 @@ venv/bin/python test_pathery.py
 To measure the performance of the solver, run the `benchmark.py` script.
 
 ```bash
-venv/bin/python benchmark.py
+python benchmark.py
 ```
 The script will print the final path length and execution time to the console, and log the result to `benchmarks/solver_performance.md`.
 
