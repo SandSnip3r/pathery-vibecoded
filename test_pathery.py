@@ -2,9 +2,46 @@
 import unittest
 import logging
 from pathery_emulator import PatheryEmulator
-from pathery_solver import PatherySolver, load_puzzle
+from pathery_solver import load_puzzle
+from solvers import (
+    HillClimbingSolver,
+    SimulatedAnnealingSolver,
+    HybridGeneticSolver,
+    MemeticSolver,
+)
 
 logging.basicConfig(filename='/usr/local/google/home/victorstone/pathery_project/test.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+
+class BaseSolverTest(unittest.TestCase):
+    def setUp(self):
+        self.game, self.best_known_solution = load_puzzle(
+            '/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_1.json'
+        )
+
+    def _test_solver(self, solver):
+        best_path, best_path_length = solver.solve()
+        self.assertIsNotNone(best_path)
+        self.assertGreater(best_path_length, 0)
+
+class TestHillClimbingSolver(BaseSolverTest):
+    def test_solver(self):
+        solver = HillClimbingSolver(self.game)
+        self._test_solver(solver)
+
+class TestSimulatedAnnealingSolver(BaseSolverTest):
+    def test_solver(self):
+        solver = SimulatedAnnealingSolver(self.game)
+        self._test_solver(solver)
+
+class TestHybridGeneticSolver(BaseSolverTest):
+    def test_solver(self):
+        solver = HybridGeneticSolver(self.game, num_generations=5)
+        self._test_solver(solver)
+
+class TestMemeticSolver(BaseSolverTest):
+    def test_solver(self):
+        solver = MemeticSolver(self.game, num_generations=5)
+        self._test_solver(solver)
 
 class TestPathery(unittest.TestCase):
 
@@ -50,10 +87,10 @@ class TestPathery(unittest.TestCase):
         """
         game, _ = load_puzzle('/usr/local/google/home/victorstone/pathery_project/puzzles/puzzle_1.json')
         
-        solver = PatherySolver(game)
-        best_path, best_path_length = solver.solve_hybrid_genetic_algorithm(game.num_walls, 10, 5, 0.1, 2)
+        solver = HybridGeneticSolver(game, population_size=10, num_generations=5, mutation_rate=0.1, elite_size=2)
+        best_walls, best_path_length = solver.solve()
         
-        self.assertIsNotNone(best_path)
+        self.assertIsNotNone(best_walls)
         
         # Log the final grid state
         logging.info("Final grid state:")
@@ -62,7 +99,7 @@ class TestPathery(unittest.TestCase):
             
         final_path = game.find_path()
         self.assertIsNotNone(final_path)
-        self.assertEqual(len(best_path), len(final_path))
+        self.assertEqual(best_path_length, len(final_path))
 
 if __name__ == '__main__':
     unittest.main()

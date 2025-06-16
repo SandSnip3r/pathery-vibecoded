@@ -49,11 +49,20 @@ This project is a high-performance, Python-based command-line application design
 
 ### Solving Puzzles
 
-To run the solver on a specific puzzle, provide the path to the puzzle file and the number of generations to run as command-line arguments.
+To run the solver on a specific puzzle, provide the path to the puzzle file and optionally specify a solver and the number of generations.
 
 ```bash
-venv/bin/python pathery_solver.py puzzles/puzzle_1.json --generations 50
+venv/bin/python pathery_solver.py puzzles/puzzle_1.json --solver memetic --generations 50
 ```
+
+The following solvers are available:
+*   `hill_climbing`
+*   `simulated_annealing`
+*   `hybrid_genetic`
+*   `memetic` (default)
+
+The `--generations` argument is only used by the `hybrid_genetic` and `memetic` solvers.
+
 
 ### Running Tests
 
