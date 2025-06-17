@@ -26,7 +26,6 @@ def solver_factory(solver_name: str, emulator: PatheryEmulator, config: Dict[str
         "simulated_annealing": SimulatedAnnealingSolver,
         "hybrid_genetic": HybridGeneticSolver,
         "memetic": MemeticSolver,
-        "focused_search": FocusedSearchSolver,
     }.get(solver_name)
 
     if not solver_class:
@@ -69,7 +68,7 @@ def load_puzzle(file_path: str) -> Tuple[PatheryEmulator, int]:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("puzzle_name", help="The name of the puzzle to solve (e.g., puzzle_1).")
-    parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search).")
+    parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic).")
     parser.add_argument("--num_generations", type=int, help="Number of generations for genetic algorithms.")
     args = parser.parse_args()
 
