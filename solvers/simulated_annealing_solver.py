@@ -33,11 +33,10 @@ class SimulatedAnnealingSolver(BaseSolver):
         self._clear_walls()
         self._randomly_place_walls(self.emulator.num_walls)
 
-        current_path = self.emulator.find_path()
+        current_path, current_path_length = self.emulator.find_path()
         if not current_path:
             return None, 0
 
-        current_path_length = len(current_path)
         best_path = current_path
         best_path_length = current_path_length
         best_grid = [row[:] for row in self.emulator.grid]
@@ -66,11 +65,9 @@ class SimulatedAnnealingSolver(BaseSolver):
             self.emulator.remove_wall(wall_to_move[0], wall_to_move[1])
             self.emulator.add_wall(new_x, new_y)
 
-            new_path = self.emulator.find_path()
+            new_path, new_path_length = self.emulator.find_path()
 
             if new_path:
-                new_path_length = len(new_path)
-                
                 # If the new solution is better, accept it
                 if new_path_length > current_path_length:
                     current_path_length = new_path_length
@@ -87,6 +84,10 @@ class SimulatedAnnealingSolver(BaseSolver):
                         # Revert the change
                         self.emulator.remove_wall(new_x, new_y)
                         self.emulator.add_wall(wall_to_move[0], wall_to_move[1])
+            else:
+                # Revert the change
+                self.emulator.remove_wall(new_x, new_y)
+                self.emulator.add_wall(wall_to_move[0], wall_to_move[1])
 
             # Cool the temperature
             temp *= 1 - self.cooling_rate

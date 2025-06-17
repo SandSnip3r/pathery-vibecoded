@@ -24,6 +24,42 @@ class PatheryEmulator:
         self.finish = None
         self.checkpoints = []
 
+    def get_wall_locations(self) -> List[Tuple[int, int]]:
+        """
+        Returns a list of all wall locations.
+        """
+        walls = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x] == '#':
+                    walls.append((x, y))
+        return walls
+
+    def get_empty_cells(self) -> List[Tuple[int, int]]:
+        """
+        Returns a list of all empty cells.
+        """
+        empty_cells = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x] == ' ':
+                    empty_cells.append((x, y))
+        return empty_cells
+
+    def set_walls(self, walls: List[Tuple[int, int]]) -> None:
+        """
+        Sets the walls on the grid.
+        """
+        # First, clear all existing walls
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x] == '#':
+                    self.grid[y][x] = ' '
+        
+        # Then, add the new walls
+        for x, y in walls:
+            self.add_wall(x, y)
+
     def get_num_walls(self) -> int:
         """
         Counts the number of walls currently on the grid.
@@ -124,9 +160,12 @@ class PatheryEmulator:
 
     
 
-    def find_path(self) -> Optional[List[Tuple[int, int]]]:
+    def find_path(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
         Finds the path from the start to the finish, visiting checkpoints in order.
+        
+        Returns:
+            A tuple containing the path and its length.
         """
         if not self.start or not self.finish:
             raise ValueError("Start and finish positions must be set.")
@@ -142,7 +181,7 @@ class PatheryEmulator:
 
         if not self.checkpoints:
             path = find_path_cpp(self.width, self.height, walls, rocks, self.start, self.finish)
-            return path if path else None
+            return (path, len(path)) if path else (None, 0)
 
         # Organize checkpoints by label
         checkpoints_by_label = {}
@@ -167,7 +206,7 @@ class PatheryEmulator:
                     next_checkpoint = checkpoint_pos
             
             if not shortest_path_to_checkpoint:
-                return None # No path to the next checkpoint
+                return None, 0 # No path to the next checkpoint
             
             total_path.extend(shortest_path_to_checkpoint[:-1]) # Avoid duplicating the checkpoint itself
             current_pos = next_checkpoint
@@ -175,10 +214,10 @@ class PatheryEmulator:
         # Path from the last checkpoint to the finish
         final_segment = find_path_cpp(self.width, self.height, walls, rocks, current_pos, self.finish)
         if not final_segment:
-            return None # No path from the last checkpoint to the finish
+            return None, 0 # No path from the last checkpoint to the finish
 
         total_path.extend(final_segment)
-        return total_path
+        return total_path, len(total_path)
 
     def draw_path(self, path: List[Tuple[int, int]]) -> None:
         """

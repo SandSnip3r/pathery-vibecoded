@@ -39,8 +39,7 @@ class HillClimbingSolver(BaseSolver):
 
             if path_length > best_path_length:
                 best_path_length = path_length
-                best_path = self.emulator.find_path()
-                best_grid = [row[:] for row in self.emulator.grid]
+                best_path, best_path_length = self.emulator.find_path()
 
         # Restore the best grid found
         if best_grid:
@@ -52,11 +51,9 @@ class HillClimbingSolver(BaseSolver):
         """
         Optimizes a single wall configuration by hill climbing.
         """
-        current_path = self.emulator.find_path()
+        current_path, current_path_length = self.emulator.find_path()
         if not current_path:
             return None, 0, []
-
-        current_path_length = len(current_path)
 
         for _ in range(max_steps):
             best_neighbor_grid = None
@@ -83,9 +80,9 @@ class HillClimbingSolver(BaseSolver):
                     self.emulator.remove_wall(x_wall, y_wall)
                     self.emulator.add_wall(x_new, y_new)
 
-                    path = self.emulator.find_path()
-                    if path and len(path) > best_neighbor_path_length:
-                        best_neighbor_path_length = len(path)
+                    path, path_length = self.emulator.find_path()
+                    if path and path_length > best_neighbor_path_length:
+                        best_neighbor_path_length = path_length
                         best_neighbor_grid = [row[:] for row in self.emulator.grid]
 
                     self.emulator.remove_wall(x_new, y_new)
@@ -103,4 +100,5 @@ class HillClimbingSolver(BaseSolver):
                 if self.emulator.grid[y][x] == '#':
                     final_wall_positions.append((x, y))
 
-        return self.emulator.find_path(), current_path_length, final_wall_positions
+        final_path, final_path_length = self.emulator.find_path()
+        return final_path, final_path_length, final_wall_positions

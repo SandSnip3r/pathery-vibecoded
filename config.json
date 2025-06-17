@@ -3,7 +3,8 @@
     "puzzle_1": "puzzles/puzzle_1.json",
     "puzzle_2": "puzzles/puzzle_2.json",
     "puzzle_3": "puzzles/puzzle_3.json",
-    "puzzle_4": "puzzles/puzzle_4.json"
+    "puzzle_4": "puzzles/puzzle_4.json",
+    "puzzle_5": "puzzles/puzzle_5.json"
   },
   "log_files": {
     "solver": "solver.log",
@@ -30,6 +31,10 @@
       "mutation_rate": 0.01,
       "elite_size": 5,
       "hill_climbing_restarts": 5
+    },
+    "focused_search": {
+      "beam_width": 20,
+      "search_depth": 10
     }
   }
 }

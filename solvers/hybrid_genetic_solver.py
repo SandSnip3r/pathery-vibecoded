@@ -17,8 +17,7 @@ def _calculate_fitness(individual: List[Tuple[int, int]]) -> Tuple[int, List[Tup
     for x, y in individual:
         solver.emulator.add_wall(x, y)
     
-    path = solver.emulator.find_path()
-    path_length = len(path) if path else 0
+    _, path_length = solver.emulator.find_path()
     return path_length, individual
 
 

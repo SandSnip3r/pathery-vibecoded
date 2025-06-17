@@ -1,0 +1,10 @@
+
+{
+    "width": 20,
+    "height": 20,
+    "num_walls": 30,
+    "start": [10, 10],
+    "finish": [0, 0],
+    "rocks": [],
+    "best_solution": 0
+}

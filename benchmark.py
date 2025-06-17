@@ -55,8 +55,8 @@ def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> Non
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--puzzles", nargs='+', default=['puzzle_1', 'puzzle_2', 'puzzle_3', 'puzzle_4'], help="The names of the puzzles to solve.")
-    parser.add_argument("--solvers", nargs='+', default=['hill_climbing', 'simulated_annealing', 'hybrid_genetic', 'memetic'], help="The solvers to use.")
+    parser.add_argument("--puzzles", nargs='+', default=['puzzle_1', 'puzzle_2', 'puzzle_3', 'puzzle_4', 'puzzle_5'], help="The names of the puzzles to solve.")
+    parser.add_argument("--solvers", nargs='+', default=['hill_climbing', 'simulated_annealing', 'hybrid_genetic', 'memetic', 'focused_search'], help="The solvers to use.")
     parser.add_argument("--num_runs", type=int, default=5, help="The number of times to run the benchmark for each solver.")
     args = parser.parse_args()
     run_benchmarks(args.puzzles, args.solvers, args.num_runs)
