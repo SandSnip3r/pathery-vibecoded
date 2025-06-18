@@ -4,8 +4,9 @@ import logging
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
-from pathery_solver import load_puzzle, solver_factory, load_config
+from pathery_env.envs.pathery import PatheryEnv
+from tests.map_builder import MapBuilder
+from pathery_solver import solver_factory
 from solvers import (
     HillClimbingSolver,
     SimulatedAnnealingSolver,
@@ -15,14 +16,13 @@ from solvers import (
 
 class BaseSolverTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.config = load_config()
-        self.game, self.best_known_solution = load_puzzle(
-            self.config['puzzle_files']['puzzle_1']
-        )
-        logging.basicConfig(filename=self.config['log_files']['test'], level=logging.INFO, format='%(asctime)s - %(message)s')
+        map_string = MapBuilder(10, 10, 5).set_start(0, 0).set_finish(9, 9).build()
+        self.env = PatheryEnv(render_mode=None, map_string=map_string)
+        self.env.reset()
+        logging.basicConfig(filename='test.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
     def _test_solver(self, solver_name: str) -> None:
-        solver = solver_factory(solver_name, self.game, self.config, self.best_known_solution)
+        solver = solver_factory(solver_name, self.env)
         best_path, best_path_length = solver.solve()
         self.assertIsNotNone(best_path)
         self.assertGreater(best_path_length, 0)
@@ -48,22 +48,22 @@ class TestSolverBug(unittest.TestCase):
         """
         A minimal test case to reproduce the solver bug.
         """
-        config = load_config()
-        game, _ = load_puzzle(config['puzzle_files']['puzzle_1'])
+        map_string = MapBuilder(10, 10, 5).set_start(0, 0).set_finish(9, 9).build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
         
-        solver = solver_factory("hybrid_genetic", game, config)
+        solver = solver_factory("hybrid_genetic", env)
         best_walls, best_path_length = solver.solve()
         
         self.assertIsNotNone(best_walls)
         
         # Log the final grid state
         logging.info("Final grid state:")
-        for row in game.grid:
-            logging.info("".join(map(str, row)))
+        logging.info(env.render())
             
-        final_path, final_path_length = game.find_path()
+        final_path = env._calculateShortestPath()
         self.assertIsNotNone(final_path)
-        self.assertEqual(best_path_length, final_path_length)
+        self.assertEqual(best_path_length, len(final_path))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,23 +1,24 @@
 
 import random
 from typing import List, Tuple, Optional
-from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
+from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
+import numpy as np
 
 class HillClimbingSolver(BaseSolver):
     """
     A solver that uses the hill-climbing algorithm.
     """
 
-    def __init__(self, emulator: PatheryEmulator, num_restarts: int = 10, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, num_restarts: int = 10, best_known_solution: int = 0) -> None:
         """
         Initializes the HillClimbingSolver.
 
         Args:
-            emulator (PatheryEmulator): An instance of the PatheryEmulator.
+            env (PatheryEnv): An instance of the PatheryEnv.
             num_restarts (int): The number of times to restart the algorithm.
         """
-        super().__init__(emulator, best_known_solution)
+        super().__init__(env, best_known_solution)
         self.num_restarts = num_restarts
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
@@ -33,17 +34,18 @@ class HillClimbingSolver(BaseSolver):
 
         for _ in range(self.num_restarts):
             self._clear_walls()
-            self._randomly_place_walls(self.emulator.num_walls)
+            self._randomly_place_walls(self.env.wallsToPlace)
             
-            _, path_length, _ = self._hill_climb_optimizer(self.emulator.num_walls)
+            _, path_length, _ = self._hill_climb_optimizer(self.env.wallsToPlace)
 
             if path_length > best_path_length:
                 best_path_length = path_length
-                best_path, best_path_length = self.emulator.find_path()
+                best_path = self.env._calculateShortestPath()
+                best_grid = self.env.grid.copy()
 
         # Restore the best grid found
-        if best_grid:
-            self.emulator.grid = best_grid
+        if best_grid is not None:
+            self.env.grid = best_grid
 
         return best_path, best_path_length
 
@@ -51,54 +53,47 @@ class HillClimbingSolver(BaseSolver):
         """
         Optimizes a single wall configuration by hill climbing.
         """
-        current_path, current_path_length = self.emulator.find_path()
-        if not current_path:
+        current_path = self.env._calculateShortestPath()
+        current_path_length = len(current_path)
+        if not current_path.any():
             return None, 0, []
 
         for _ in range(max_steps):
             best_neighbor_grid = None
             best_neighbor_path_length = current_path_length
 
-            wall_positions = []
-            for y in range(self.emulator.height):
-                for x in range(self.emulator.width):
-                    if self.emulator.grid[y][x] == '#':
-                        wall_positions.append((x, y))
+            wall_positions = np.where(self.env.grid == CellType.WALL.value)
+            wall_positions = list(zip(wall_positions[1], wall_positions[0]))
 
             # Get all empty squares
-            empty_squares = []
-            for y in range(self.emulator.height):
-                for x in range(self.emulator.width):
-                    if self.emulator.grid[y][x] == ' ':
-                        empty_squares.append((x, y))
+            empty_squares = np.where(self.env.grid == CellType.OPEN.value)
+            empty_squares = list(zip(empty_squares[1], empty_squares[0]))
 
             if not empty_squares:
                 break
 
             for x_wall, y_wall in wall_positions:
                 for x_new, y_new in random.sample(empty_squares, min(len(empty_squares), num_samples)):
-                    self.emulator.remove_wall(x_wall, y_wall)
-                    self.emulator.add_wall(x_new, y_new)
+                    self.env.grid[y_wall][x_wall] = CellType.OPEN.value
+                    self.env.grid[y_new][x_new] = CellType.WALL.value
 
-                    path, path_length = self.emulator.find_path()
-                    if path and path_length > best_neighbor_path_length:
+                    path = self.env._calculateShortestPath()
+                    path_length = len(path)
+                    if path.any() and path_length > best_neighbor_path_length:
                         best_neighbor_path_length = path_length
-                        best_neighbor_grid = [row[:] for row in self.emulator.grid]
+                        best_neighbor_grid = self.env.grid.copy()
 
-                    self.emulator.remove_wall(x_new, y_new)
-                    self.emulator.add_wall(x_wall, y_wall)
+                    self.env.grid[y_new][x_new] = CellType.OPEN.value
+                    self.env.grid[y_wall][x_wall] = CellType.WALL.value
 
-            if best_neighbor_grid:
-                self.emulator.grid = best_neighbor_grid
+            if best_neighbor_grid is not None:
+                self.env.grid = best_neighbor_grid
                 current_path_length = best_neighbor_path_length
             else:
                 break
         
-        final_wall_positions = []
-        for y in range(self.emulator.height):
-            for x in range(self.emulator.width):
-                if self.emulator.grid[y][x] == '#':
-                    final_wall_positions.append((x, y))
+        final_wall_positions = np.where(self.env.grid == CellType.WALL.value)
+        final_wall_positions = list(zip(final_wall_positions[1], final_wall_positions[0]))
 
-        final_path, final_path_length = self.emulator.find_path()
-        return final_path, final_path_length, final_wall_positions
+        final_path = self.env._calculateShortestPath()
+        return final_path, len(final_path), final_wall_positions

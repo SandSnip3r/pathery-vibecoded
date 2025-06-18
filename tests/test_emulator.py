@@ -1,11 +1,10 @@
 
 import unittest
-import logging
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
-from pathery_solver import load_puzzle, load_config
+from pathery_env.envs.pathery import PatheryEnv
+from tests.map_builder import MapBuilder
 
 class TestPathery(unittest.TestCase):
 
@@ -13,139 +12,100 @@ class TestPathery(unittest.TestCase):
         """
         Tests a simple path with a known length.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        path, path_length = game.find_path()
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        self.assertEqual(path_length, 9)
+        self.assertEqual(len(path), 8)
 
     def test_path_with_obstacle(self) -> None:
         """
         Tests a path with a simple obstacle.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        game.add_rock(2, 2)
-        path, path_length = game.find_path()
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).add_rock(2, 2).build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        self.assertEqual(path_length, 9)
+        self.assertEqual(len(path), 8)
 
     def test_no_path(self) -> None:
         """
         Tests a puzzle with no possible path.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        game.add_rock(0, 1)
-        game.add_rock(1, 0)
-        game.add_rock(1, 1)
-        path, path_length = game.find_path()
-        self.assertIsNone(path)
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).add_rock(0, 1).add_rock(1, 0).add_rock(1, 1).build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
+        self.assertEqual(len(path), 0)
 
     def test_checkpoint_path(self) -> None:
         """
         Tests a path with a single checkpoint.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        game.add_checkpoint(2, 2, 'A')
-        path, path_length = game.find_path()
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).add_checkpoint(2, 2, 'A').build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        self.assertEqual(path_length, 9)
+        self.assertEqual(len(path), 8)
 
     def test_multiple_checkpoints(self) -> None:
         """
         Tests a path with multiple checkpoints that must be visited in order.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        game.add_checkpoint(1, 1, 'A')
-        game.add_checkpoint(3, 3, 'B')
-        path, path_length = game.find_path()
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).add_checkpoint(1, 1, 'A').add_checkpoint(3, 3, 'B').build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        self.assertEqual(path_length, 9)
+        self.assertEqual(len(path), 8)
 
     def test_closest_checkpoint(self) -> None:
         """
         Tests that the path goes to the closest of two same-labeled checkpoints.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        game.add_checkpoint(1, 1, 'A')
-        game.add_checkpoint(3, 0, 'A')
-        path, path_length = game.find_path()
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).add_checkpoint(1, 1, 'A').add_checkpoint(3, 0, 'A').build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        # Path should go to (1,1) then to (4,4), length 9
-        # Path to (3,0) is 3, path from there to (4,4) is 5. Total dist 8.
-        # Path to (1,1) is 2, path from there to (4,4) is 6. Total dist 8.
-        # (1,1) is closer to (0,0) than (3,0).
-        self.assertEqual(path_length, 9)
+        self.assertEqual(len(path), 8)
 
     def test_checkpoint_order(self) -> None:
         """
         Tests that checkpoints are visited in alphabetical order.
         """
-        game = PatheryEmulator(6, 6, 0)
-        game.set_start(0, 0)
-        game.set_finish(5, 5)
-        game.add_checkpoint(1, 1, 'B')
-        game.add_checkpoint(2, 2, 'C')
-        game.add_checkpoint(3, 3, 'A')
-        path, path_length = game.find_path()
+        map_string = MapBuilder(6, 6).set_start(0, 0).set_finish(5, 5).add_checkpoint(1, 1, 'B').add_checkpoint(2, 2, 'C').add_checkpoint(3, 3, 'A').build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        # Path should be (0,0)->A(3,3)->B(1,1)->C(2,2)->(5,5)
-        # (0,0) to A(3,3): dist 6
-        # A(3,3) to B(1,1): dist 4
-        # B(1,1) to C(2,2): dist 2
-        # C(2,2) to (5,5): dist 6
-        # Total dist = 6 + 4 + 2 + 6 = 18. Path length = 19.
-        self.assertEqual(path_length, 19)
+        self.assertEqual(len(path), 18)
 
     def test_multiple_instances_of_checkpoint(self) -> None:
         """
         Tests pathfinding with multiple instances of the same checkpoint letters.
         The path should go to the closest 'A', then the closest 'B'.
         """
-        game = PatheryEmulator(7, 7, 0)
-        game.set_start(0, 0)
-        game.set_finish(6, 6)
-        game.add_checkpoint(1, 1, 'A') # closer A
-        game.add_checkpoint(5, 5, 'A') # further A
-        game.add_checkpoint(2, 2, 'B') # closer B from A(1,1)
-        game.add_checkpoint(4, 4, 'B') # further B from A(1,1)
-        path, path_length = game.find_path()
+        map_string = MapBuilder(7, 7).set_start(0, 0).set_finish(6, 6).add_checkpoint(1, 1, 'A').add_checkpoint(5, 5, 'A').add_checkpoint(2, 2, 'B').add_checkpoint(4, 4, 'B').build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        # Path: start -> closest A (1,1) -> closest B (2,2) -> finish
-        # (0,0) to A(1,1): dist 2
-        # A(1,1) to B(2,2): dist 2
-        # B(2,2) to finish(6,6): dist 8
-        # Total dist = 2 + 2 + 8 = 12. Path length = 13.
-        self.assertEqual(path_length, 13)
+        self.assertEqual(len(path), 12)
 
     def test_checkpoint_with_obstacle(self) -> None:
         """
         Tests a path to a checkpoint that is partially obstructed.
         """
-        game = PatheryEmulator(5, 5, 0)
-        game.set_start(0, 0)
-        game.set_finish(4, 4)
-        game.add_checkpoint(2, 2, 'A')
-        game.add_rock(1, 2)
-        game.add_rock(2, 1)
-        path, path_length = game.find_path()
+        map_string = MapBuilder(5, 5).set_start(0, 0).set_finish(4, 4).add_checkpoint(2, 2, 'A').add_rock(1, 2).add_rock(2, 1).build()
+        env = PatheryEnv(render_mode=None, map_string=map_string)
+        env.reset()
+        path = env._calculateShortestPath()
         self.assertIsNotNone(path)
-        # Path to A(2,2) is obstructed.
-        # Shortest path from (0,0) to (2,2) with obstacles requires going around.
-        # e.g., (0,0)->(1,0)->(2,0)->(3,0)->(3,1)->(3,2)->(2,2) is dist 6
-        # Path from A(2,2) to finish(4,4) is dist 4.
-        # Total dist = 6 + 4 = 10. Path length = 11.
-        self.assertEqual(path_length, 11)
+        self.assertEqual(len(path), 10)
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,24 +2,25 @@
 import random
 import math
 from typing import Tuple, List, Optional
-from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
+from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
+import numpy as np
 
 class SimulatedAnnealingSolver(BaseSolver):
     """
     A solver that uses the simulated annealing algorithm.
     """
 
-    def __init__(self, emulator: PatheryEmulator, initial_temp: float = 1000, cooling_rate: float = 0.003, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, initial_temp: float = 1000, cooling_rate: float = 0.003, best_known_solution: int = 0) -> None:
         """
         Initializes the SimulatedAnnealingSolver.
 
         Args:
-            emulator (PatheryEmulator): An instance of the PatheryEmulator.
+            env (PatheryEnv): An instance of the PatheryEnv.
             initial_temp (float): The initial temperature.
             cooling_rate (float): The rate at which the temperature cools.
         """
-        super().__init__(emulator, best_known_solution)
+        super().__init__(env, best_known_solution)
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
 
@@ -31,50 +32,51 @@ class SimulatedAnnealingSolver(BaseSolver):
             tuple: A tuple containing the best path found and its length.
         """
         self._clear_walls()
-        self._randomly_place_walls(self.emulator.num_walls)
+        self._randomly_place_walls(self.env.wallsToPlace)
 
-        current_path, current_path_length = self.emulator.find_path()
-        if not current_path:
+        current_path = self.env._calculateShortestPath()
+        current_path_length = len(current_path)
+        if not current_path.any():
             return None, 0
 
         best_path = current_path
         best_path_length = current_path_length
-        best_grid = [row[:] for row in self.emulator.grid]
+        best_grid = self.env.grid.copy()
 
         temp = self.initial_temp
 
         while temp > 1:
             # Create a neighbor by moving a random wall
-            wall_positions = []
-            for y in range(self.emulator.height):
-                for x in range(self.emulator.width):
-                    if self.emulator.grid[y][x] == '#':
-                        wall_positions.append((x, y))
+            wall_positions = np.where(self.env.grid == CellType.WALL.value)
+            wall_positions = list(zip(wall_positions[1], wall_positions[0]))
 
             if not wall_positions:
                 break
 
             wall_to_move = random.choice(wall_positions)
             
-            while True:
-                new_x = random.randint(0, self.emulator.width - 1)
-                new_y = random.randint(0, self.emulator.height - 1)
-                if self.emulator.grid[new_y][new_x] == ' ':
-                    break
+            empty_cells = np.where(self.env.grid == CellType.OPEN.value)
+            empty_cells = list(zip(empty_cells[1], empty_cells[0]))
+
+            if not empty_cells:
+                break
+
+            new_x, new_y = random.choice(empty_cells)
             
-            self.emulator.remove_wall(wall_to_move[0], wall_to_move[1])
-            self.emulator.add_wall(new_x, new_y)
+            self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.OPEN.value
+            self.env.grid[new_y][new_x] = CellType.WALL.value
 
-            new_path, new_path_length = self.emulator.find_path()
+            new_path = self.env._calculateShortestPath()
+            new_path_length = len(new_path)
 
-            if new_path:
+            if new_path.any():
                 # If the new solution is better, accept it
                 if new_path_length > current_path_length:
                     current_path_length = new_path_length
                     if new_path_length > best_path_length:
                         best_path_length = new_path_length
                         best_path = new_path
-                        best_grid = [row[:] for row in self.emulator.grid]
+                        best_grid = self.env.grid.copy()
                 # If the new solution is worse, accept it with a certain probability
                 else:
                     acceptance_probability = math.exp((new_path_length - current_path_length) / temp)
@@ -82,18 +84,18 @@ class SimulatedAnnealingSolver(BaseSolver):
                         current_path_length = new_path_length
                     else:
                         # Revert the change
-                        self.emulator.remove_wall(new_x, new_y)
-                        self.emulator.add_wall(wall_to_move[0], wall_to_move[1])
+                        self.env.grid[new_y][new_x] = CellType.OPEN.value
+                        self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.WALL.value
             else:
                 # Revert the change
-                self.emulator.remove_wall(new_x, new_y)
-                self.emulator.add_wall(wall_to_move[0], wall_to_move[1])
+                self.env.grid[new_y][new_x] = CellType.OPEN.value
+                self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.WALL.value
 
             # Cool the temperature
             temp *= 1 - self.cooling_rate
 
         # Restore the best grid found
-        if best_grid:
-            self.emulator.grid = best_grid
+        if best_grid is not None:
+            self.env.grid = best_grid
 
         return best_path, best_path_length

@@ -3,22 +3,25 @@ import random
 import logging
 from multiprocessing import Pool
 from typing import List, Tuple, Optional
-from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
+from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
+import numpy as np
 
-def _init_worker(emulator: PatheryEmulator) -> None:
-    global solver
-    # This is a simplified solver for the worker process
-    solver = BaseSolver(emulator)
+def _init_worker(env: PatheryEnv) -> None:
+    global solver_env
+    solver_env = env
 
 def _calculate_fitness(individual: List[Tuple[int, int]]) -> Tuple[int, List[Tuple[int, int]]]:
     
-    solver._clear_walls()
+    wall_locations = np.where(solver_env.grid == CellType.WALL.value)
+    for y, x in zip(wall_locations[0], wall_locations[1]):
+        solver_env.grid[y][x] = CellType.OPEN.value
+
     for x, y in individual:
-        solver.emulator.add_wall(x, y)
+        solver_env.step((y,x))
     
-    _, path_length = solver.emulator.find_path()
-    return path_length, individual
+    path = solver_env._calculateShortestPath()
+    return len(path), individual
 
 
 class HybridGeneticSolver(BaseSolver):
@@ -26,19 +29,19 @@ class HybridGeneticSolver(BaseSolver):
     A solver that uses a hybrid genetic algorithm.
     """
 
-    def __init__(self, emulator: PatheryEmulator, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0) -> None:
         """
         Initializes the HybridGeneticSolver.
 
         Args:
-            emulator (PatheryEmulator): An instance of the PatheryEmulator.
+            env (PatheryEnv): An instance of the PatheryEnv.
             population_size (int): The size of the population in each generation.
             num_generations (int): The number of generations to run.
             mutation_rate (float): The probability of a mutation occurring.
             elite_size (int): The number of top individuals to carry over to the next generation.
             best_known_solution (int): The best known solution length.
         """
-        super().__init__(emulator)
+        super().__init__(env)
         self.population_size = population_size
         self.num_generations = num_generations
         self.mutation_rate = mutation_rate
@@ -57,8 +60,14 @@ class HybridGeneticSolver(BaseSolver):
 
         # Initialize population
         population = [[] for _ in range(self.population_size)]
+        for i in range(self.population_size):
+            self._clear_walls()
+            self._randomly_place_walls(self.env.wallsToPlace)
+            wall_locations = np.where(self.env.grid == CellType.WALL.value)
+            population[i] = list(zip(wall_locations[1], wall_locations[0]))
 
-        with Pool(initializer=_init_worker, initargs=(self.emulator,)) as pool:
+
+        with Pool(initializer=_init_worker, initargs=(self.env,)) as pool:
             for generation in range(self.num_generations):
                 # Dynamic mutation rate
                 current_mutation_rate = max(0.01, self.mutation_rate * (0.95 ** generation))
@@ -79,7 +88,7 @@ class HybridGeneticSolver(BaseSolver):
                             if best_individual:
                                 self._clear_walls()
                                 for x, y in best_individual:
-                                    self.emulator.add_wall(x, y)
+                                    self.env.step((y,x))
                             return best_individual, best_path_length
 
                 # Select parents and carry over elites
@@ -91,7 +100,7 @@ class HybridGeneticSolver(BaseSolver):
                 new_population = elites
                 for _ in range(self.population_size - self.elite_size):
                     parent1, parent2 = random.choices(parents, k=2)
-                    child = self._crossover(parent1, parent2, self.emulator.num_walls)
+                    child = self._crossover(parent1, parent2, self.env.wallsToPlace)
                     self._mutate(child, current_mutation_rate)
                     new_population.append(child)
 
@@ -101,7 +110,7 @@ class HybridGeneticSolver(BaseSolver):
         if best_individual:
             self._clear_walls()
             for x, y in best_individual:
-                self.emulator.add_wall(x, y)
+                self.env.step((y,x))
 
         return best_individual, best_path_length
 

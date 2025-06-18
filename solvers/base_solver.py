@@ -1,23 +1,23 @@
 
 import random
-
+import numpy as np
 from typing import Tuple, List, Optional
-from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
+from pathery_env.envs.pathery import PatheryEnv, CellType
 
 class BaseSolver:
     """
     A base class for Pathery solvers.
     """
 
-    def __init__(self, emulator: PatheryEmulator, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, best_known_solution: int = 0) -> None:
         """
         Initializes the BaseSolver.
 
         Args:
-            emulator (PatheryEmulator): An instance of the PatheryEmulator.
+            env (PatheryEnv): An instance of the PatheryEnv.
             best_known_solution (int): The best known solution length.
         """
-        self.emulator = emulator
+        self.env = env
         self.best_known_solution = best_known_solution
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
@@ -30,10 +30,9 @@ class BaseSolver:
         """
         Clears all walls from the emulator's grid.
         """
-        for y in range(self.emulator.height):
-            for x in range(self.emulator.width):
-                if self.emulator.grid[y][x] == '#':
-                    self.emulator.remove_wall(x, y)
+        wall_locations = np.where(self.env.grid == CellType.WALL.value)
+        for y, x in zip(wall_locations[0], wall_locations[1]):
+            self.env.grid[y][x] = CellType.OPEN.value
 
     def _randomly_place_walls(self, num_walls: int) -> None:
         """
@@ -42,8 +41,9 @@ class BaseSolver:
         Args:
             num_walls (int): The number of walls to place.
         """
-        empty_cells = self.emulator.get_empty_cells()
-        random.shuffle(empty_cells)
-        for i in range(min(num_walls, len(empty_cells))):
-            x, y = empty_cells[i]
-            self.emulator.add_wall(x, y)
+        open_cells = np.where(self.env.grid == CellType.OPEN.value)
+        open_cells = list(zip(open_cells[1], open_cells[0]))
+        random.shuffle(open_cells)
+        for i in range(min(num_walls, len(open_cells))):
+            x, y = open_cells[i]
+            self.env.step((y, x))
