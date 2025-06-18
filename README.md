@@ -24,7 +24,12 @@ This project is a high-performance, Python-based command-line application design
 *   **`pathery_pathfinding.cpp`**: A C++ implementation of the A* pathfinding algorithm, exposed to Python using `pybind11`.
 *   **`pathery_rules.md`**: A markdown file containing the rules of the Pathery game.
 *   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension.
-*   **`test_pathery.py`**: A suite of unit tests built with Python's `unittest` module.
+*   **`tests/`**: This directory contains the unit tests for the project. `test_emulator.py` tests the game emulator, and `test_solvers.py` tests the solver algorithms.
+*   **`pathery_solver.py`**: The main entry point for the application. It loads a puzzle and a solver and runs the solver.
+*   **`pathery_emulator.py`**: Simulates the Pathery game board, handling the grid, walls, rocks, and the pathfinding logic.
+*   **`pathery_pathfinding.cpp`**: A C++ implementation of the A* pathfinding algorithm, exposed to Python using `pybind11`.
+*   **`pathery_rules.md`**: A markdown file containing the rules of the Pathery game.
+*   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension.
 *   **`benchmark.py`**: A script for measuring the performance of the solver.
 *   **`config.json`**: A configuration file for the project, including paths to puzzle files, log files, and solver parameters.
 
@@ -67,10 +72,10 @@ The following solvers are available:
 
 ### Running Tests
 
-To run the unit tests, execute the `test_pathery.py` script.
+To run the unit tests, execute the test scripts in the `tests` directory.
 
 ```bash
-python test_pathery.py
+python -m unittest discover tests
 ```
 
 ### Running Benchmarks
