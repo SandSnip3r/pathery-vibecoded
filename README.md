@@ -56,20 +56,30 @@ This project is a high-performance, Python-based command-line application design
 
 ## Usage
 
-### Solving Puzzles
-
-To run the solver on a specific puzzle, provide the name of the puzzle file and optionally specify a solver.
+To solve a puzzle, run the `pathery_solver.py` script with the name of the puzzle (e.g., `puzzle_1`) or the path to a puzzle file.
 
 ```bash
-python pathery_solver.py puzzle_1 --solver memetic
+# Run with a puzzle name
+python pathery_solver.py puzzle_1
+
+# Run with a file path
+python pathery_solver.py puzzles/puzzle_2.json
 ```
 
-The following solvers are available:
-*   `hill_climbing`
-*   `simulated_annealing`
-*   `hybrid_genetic`
-*   `memetic` (default)
-*   `focused_search`
+### Command-Line Options
+
+*   `--solver`: Specify the solver to use. The following solvers are available:
+    *   `hill_climbing`
+    *   `simulated_annealing`
+    *   `hybrid_genetic`
+    *   `memetic` (default)
+    *   `focused_search`
+*   `--num_generations`: Override the number of generations for genetic algorithms.
+
+Example:
+```bash
+python pathery_solver.py puzzle_3 --solver hybrid_genetic --num_generations 500
+```
 
 ### Running Tests
 

@@ -36,12 +36,16 @@ class HillClimbingSolver(BaseSolver):
             self._clear_walls()
             self._randomly_place_walls(self.env.wallsToPlace)
             
-            _, path_length, _ = self._hill_climb_optimizer(self.env.wallsToPlace)
+            _, path_length, final_walls = self._hill_climb_optimizer(self.env.wallsToPlace)
 
             if path_length > best_path_length:
                 best_path_length = path_length
-                best_path = self.env._calculateShortestPath()
                 best_grid = self.env.grid.copy()
+                self._clear_walls()
+                for x, y in final_walls:
+                    self.env.grid[y][x] = CellType.WALL.value
+                best_path = self.env._calculateShortestPath()
+
 
         # Restore the best grid found
         if best_grid is not None:
@@ -59,7 +63,7 @@ class HillClimbingSolver(BaseSolver):
             return None, 0, []
 
         for _ in range(max_steps):
-            best_neighbor_grid = None
+            best_neighbor_grid = self.env.grid.copy()
             best_neighbor_path_length = current_path_length
 
             wall_positions = np.where(self.env.grid == CellType.WALL.value)
@@ -86,7 +90,7 @@ class HillClimbingSolver(BaseSolver):
                     self.env.grid[y_new][x_new] = CellType.OPEN.value
                     self.env.grid[y_wall][x_wall] = CellType.WALL.value
 
-            if best_neighbor_grid is not None:
+            if best_neighbor_path_length > current_path_length:
                 self.env.grid = best_neighbor_grid
                 current_path_length = best_neighbor_path_length
             else:

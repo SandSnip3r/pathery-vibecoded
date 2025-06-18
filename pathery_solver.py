@@ -3,6 +3,9 @@ import json
 import logging
 import argparse
 from typing import Dict, Any, Tuple
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress
 from pathery_env.envs.pathery import PatheryEnv
 from tests.map_builder import MapBuilder
 from solvers.base_solver import BaseSolver
@@ -37,10 +40,12 @@ def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("puzzle_name", help="The name of the puzzle to solve (e.g., puzzle_1).")
+    parser.add_argument("puzzle", help="The name of the puzzle to solve (e.g., puzzle_1) or the path to a puzzle file.")
     parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search).")
     parser.add_argument("--num_generations", type=int, help="Number of generations for genetic algorithms.")
     args = parser.parse_args()
+
+    console = Console()
 
     # Load configuration
     config = load_config()
@@ -53,7 +58,12 @@ if __name__ == '__main__':
     logging.basicConfig(filename=config['log_files']['solver'], level=logging.INFO, format='%(asctime)s - %(message)s')
 
     # Load the puzzle
-    with open(config['puzzle_files'][args.puzzle_name], 'r') as f:
+    if args.puzzle in config['puzzle_files']:
+        puzzle_path = config['puzzle_files'][args.puzzle]
+    else:
+        puzzle_path = args.puzzle
+
+    with open(puzzle_path, 'r') as f:
         puzzle_data = json.load(f)
 
     builder = MapBuilder(puzzle_data['width'], puzzle_data['height'], puzzle_data['num_walls'])
@@ -67,20 +77,37 @@ if __name__ == '__main__':
         for checkpoint in puzzle_data['checkpoints']:
             builder.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
     
-    env = PatheryEnv(render_mode=None, map_string=builder.build())
+    env = PatheryEnv(render_mode="ansi", map_string=builder.build())
     env.reset()
+
+    console.print(Panel(
+        f"[bold]Puzzle:[/bold] {args.puzzle}\n"
+        f"[bold]Size:[/bold] {puzzle_data['width']}x{puzzle_data['height']}\n"
+        f"[bold]Solver:[/bold] {args.solver}\n"
+        f"{env.render()}",
+        title="[bold cyan]Pathery Puzzle Solver[/bold cyan]"
+    ))
 
     # Create a solver
     solver_config = config['solvers'].get(args.solver, {})
     solver = solver_factory(args.solver, env, **solver_config)
 
     # Find the best path
-    best_path, best_path_length = solver.solve()
+    with Progress(
+        "[progress.description]{task.description}",
+        transient=True,
+    ) as progress:
+        progress.add_task("Solving puzzle...", total=None)
+        best_path, best_path_length = solver.solve()
 
     if best_path.any():
-        print(f"Best path found with length: {best_path_length}")
+        solution_panel = Panel(
+            f"[bold]Best path found with length:[/bold] {best_path_length}\n"
+            f"{env.render()}",
+            title="[bold green]Solution Found![/bold green]"
+        )
         if puzzle_data['best_solution'] == 0 or best_path_length > puzzle_data['best_solution']:
-            print("New best solution found!")
-        print(env.render())
+            console.print("[bold yellow]New best solution found![/bold yellow]")
+        console.print(solution_panel)
     else:
-        print("No path found.")
+        console.print(Panel("[bold red]No path found.[/bold red]", title="[bold red]Solver Failed[/bold red]"))

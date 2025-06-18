@@ -59,6 +59,11 @@ class MemeticSolver(BaseSolver):
                 self.env.step((y,x))
 
         hill_climbing_solver = HillClimbingSolver(self.env, num_restarts=self.hill_climbing_restarts)
-        best_path, best_path_length, _ = hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)
+        best_path, best_path_length, final_walls = hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)
+
+        self._clear_walls()
+        self.env.remainingWalls = self.env.wallsToPlace
+        for x, y in final_walls:
+            self.env.step((y,x))
 
         return best_path, best_path_length
