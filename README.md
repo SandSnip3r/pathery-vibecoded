@@ -9,6 +9,7 @@ This project is a high-performance, Python-based command-line application design
     *   **Simulated Annealing:** A probabilistic technique for approximating the global optimum.
     *   **Hybrid Genetic Algorithm:** A sophisticated algorithm that evolves populations of wall configurations to maximize path length.
     *   **Memetic Algorithm:** A hybrid of a genetic algorithm and a local search algorithm (Hill Climbing).
+    *   **Focused Search:** A focused beam search algorithm.
 *   **C++ Accelerated Pathfinding:** The A* pathfinding algorithm, a critical performance bottleneck, is implemented in C++ and seamlessly integrated with Python using `pybind11` for maximum speed.
 *   **Parallel Fitness Calculation:** The fitness of each individual in the genetic algorithm's population is calculated in parallel, significantly reducing the time required to evolve solutions.
 *   **Extensible Solver Architecture:** The project includes a flexible architecture that allows for the easy addition of new solver algorithms.
@@ -20,16 +21,11 @@ This project is a high-performance, Python-based command-line application design
 *   **`solvers/`**: This directory contains the different solver implementations.
 *   **`experiments/`**: This directory contains markdown files that document experiments with different solver algorithms and parameters. It also includes a `template.md` for creating new experiment files.
 *   **`pathery_solver.py`**: The main entry point for the application. It loads a puzzle and a solver and runs the solver.
-*   **`pathery_emulator.py`**: Simulates the Pathery game board, handling the grid, walls, rocks, and the pathfinding logic.
+*   **`PatheryEnv/`**: This directory contains the `PatheryEnv` gymnasium environment, which simulates the Pathery game board.
 *   **`pathery_pathfinding.cpp`**: A C++ implementation of the A* pathfinding algorithm, exposed to Python using `pybind11`.
 *   **`pathery_rules.md`**: A markdown file containing the rules of the Pathery game.
-*   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension.
+*   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension and installing the `PatheryEnv` module.
 *   **`tests/`**: This directory contains the unit tests for the project. `test_emulator.py` tests the game emulator, and `test_solvers.py` tests the solver algorithms.
-*   **`pathery_solver.py`**: The main entry point for the application. It loads a puzzle and a solver and runs the solver.
-*   **`pathery_emulator.py`**: Simulates the Pathery game board, handling the grid, walls, rocks, and the pathfinding logic.
-*   **`pathery_pathfinding.cpp`**: A C++ implementation of the A* pathfinding algorithm, exposed to Python using `pybind11`.
-*   **`pathery_rules.md`**: A markdown file containing the rules of the Pathery game.
-*   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension.
 *   **`benchmark.py`**: A script for measuring the performance of the solver.
 *   **`config.json`**: A configuration file for the project, including paths to puzzle files, log files, and solver parameters.
 
@@ -48,7 +44,11 @@ This project is a high-performance, Python-based command-line application design
     ```bash
     source venv/bin/activate
     ```
-3.  **Install Dependencies and Compile the C++ Module:**
+3.  **Compile the C++ Pathfinding Library for PatheryEnv:**
+    ```bash
+    make -C PatheryEnv/pathery_env/cpp_lib/
+    ```
+4.  **Install Dependencies and Compile the C++ Module:**
     ```bash
     pip install -r requirements.txt
     python setup.py install
@@ -69,6 +69,7 @@ The following solvers are available:
 *   `simulated_annealing`
 *   `hybrid_genetic`
 *   `memetic` (default)
+*   `focused_search`
 
 ### Running Tests
 
