@@ -4,7 +4,7 @@ import logging
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from pathery_solver import load_puzzle, load_config
 
 class TestPathery(unittest.TestCase):

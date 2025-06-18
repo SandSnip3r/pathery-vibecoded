@@ -1,7 +1,7 @@
 
 import json
 import argparse
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 
 def visualize_puzzle(puzzle_name: str):
     """

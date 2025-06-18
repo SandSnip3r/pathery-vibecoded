@@ -4,7 +4,7 @@ import logging
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from pathery_solver import load_puzzle, solver_factory, load_config
 from solvers import (
     HillClimbingSolver,
@@ -59,7 +59,7 @@ class TestSolverBug(unittest.TestCase):
         # Log the final grid state
         logging.info("Final grid state:")
         for row in game.grid:
-            logging.info("".join(row))
+            logging.info("".join(map(str, row)))
             
         final_path, final_path_length = game.find_path()
         self.assertIsNotNone(final_path)

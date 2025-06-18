@@ -2,7 +2,7 @@
 import random
 
 from typing import Tuple, List, Optional
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 
 class BaseSolver:
     """
@@ -42,10 +42,8 @@ class BaseSolver:
         Args:
             num_walls (int): The number of walls to place.
         """
-        for _ in range(num_walls):
-            while True:
-                x = random.randint(0, self.emulator.width - 1)
-                y = random.randint(0, self.emulator.height - 1)
-                if self.emulator.grid[y][x] == ' ':
-                    self.emulator.add_wall(x, y)
-                    break
+        empty_cells = self.emulator.get_empty_cells()
+        random.shuffle(empty_cells)
+        for i in range(min(num_walls, len(empty_cells))):
+            x, y = empty_cells[i]
+            self.emulator.add_wall(x, y)

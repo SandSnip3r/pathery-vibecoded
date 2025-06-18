@@ -2,7 +2,7 @@
 import random
 import math
 from typing import Tuple, List, Optional
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from solvers.base_solver import BaseSolver
 
 class SimulatedAnnealingSolver(BaseSolver):

@@ -1,6 +1,6 @@
 
 from typing import Tuple, List, Optional, Any
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from solvers.base_solver import BaseSolver
 import random
 import heapq

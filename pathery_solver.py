@@ -3,7 +3,7 @@ import json
 import logging
 import argparse
 from typing import Dict, Any, Tuple
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from solvers.base_solver import BaseSolver
 from solvers import (
     HillClimbingSolver,

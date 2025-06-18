@@ -1,6 +1,6 @@
 
 from typing import Tuple, List, Optional, Any
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from solvers.base_solver import BaseSolver
 from solvers.hybrid_genetic_solver import HybridGeneticSolver
 from solvers.hill_climbing_solver import HillClimbingSolver
@@ -47,14 +47,15 @@ class MemeticSolver(BaseSolver):
         )
         best_individual, _ = genetic_solver.solve()
 
-        # If the genetic algorithm didn't find a solution, return
+        # If the genetic algorithm didn't find a solution, start with a random one
         if not best_individual:
-            return None, 0
-
-        # Now, refine the best solution using hill climbing
-        self._clear_walls()
-        for x, y in best_individual:
-            self.emulator.add_wall(x, y)
+            self._clear_walls()
+            self._randomly_place_walls(self.emulator.num_walls)
+        else:
+            # Now, refine the best solution using hill climbing
+            self._clear_walls()
+            for x, y in best_individual:
+                self.emulator.add_wall(x, y)
 
         hill_climbing_solver = HillClimbingSolver(self.emulator, num_restarts=self.hill_climbing_restarts)
         best_path, best_path_length, _ = hill_climbing_solver._hill_climb_optimizer(self.emulator.num_walls)

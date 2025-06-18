@@ -3,7 +3,7 @@ import random
 import logging
 from multiprocessing import Pool
 from typing import List, Tuple, Optional
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from solvers.base_solver import BaseSolver
 
 def _init_worker(emulator: PatheryEmulator) -> None:
@@ -56,16 +56,7 @@ class HybridGeneticSolver(BaseSolver):
         best_individual = None
 
         # Initialize population
-        population = []
-        for _ in range(self.population_size):
-            self._clear_walls()
-            self._randomly_place_walls(self.emulator.num_walls)
-            wall_positions = []
-            for y in range(self.emulator.height):
-                for x in range(self.emulator.width):
-                    if self.emulator.grid[y][x] == '#':
-                        wall_positions.append((x, y))
-            population.append(wall_positions)
+        population = [[] for _ in range(self.population_size)]
 
         with Pool(initializer=_init_worker, initargs=(self.emulator,)) as pool:
             for generation in range(self.num_generations):
@@ -78,12 +69,10 @@ class HybridGeneticSolver(BaseSolver):
                 # Asynchronously calculate fitness for the population
                 results = pool.map(_calculate_fitness, population)
 
-                fitness_scores, optimized_individuals = zip(*results)
-
-                for i, score in enumerate(fitness_scores):
+                for score, individual in results:
                     if score > best_path_length:
                         best_path_length = score
-                        best_individual = optimized_individuals[i]
+                        best_individual = individual
                         if self.best_known_solution > 0 and best_path_length >= self.best_known_solution:
                             logging.info(f"Optimal solution found with length: {best_path_length}. Exiting early.")
                             # Restore the best grid found
@@ -94,9 +83,9 @@ class HybridGeneticSolver(BaseSolver):
                             return best_individual, best_path_length
 
                 # Select parents and carry over elites
-                sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0], reverse=True)]
+                sorted_population = [x for _, x in sorted(zip(results, population), key=lambda pair: pair[0][0], reverse=True)]
                 elites = sorted_population[:self.elite_size]
-                parents = self._select_parents(population, fitness_scores)
+                parents = self._select_parents(population, [r[0] for r in results])
 
                 # Create new population
                 new_population = elites
@@ -116,36 +105,21 @@ class HybridGeneticSolver(BaseSolver):
 
         return best_individual, best_path_length
 
-    def _select_parents(self, population: List[List[Tuple[int, int]]], fitness_scores: List[int]) -> List[List[Tuple[int, int]]]:
-        # Roulette wheel selection
+    def _select_parents(self, population: List[List[Tuple[int, int]]], fitness_scores: List[int], tournament_size: int = 3) -> List[List[Tuple[int, int]]]:
         parents = []
-        total_fitness = sum(fitness_scores)
-        if total_fitness == 0:
-            # If all fitness scores are 0, select randomly
-            return random.choices(population, k=len(population))
-
         for _ in range(len(population)):
-            selection_point = random.uniform(0, total_fitness)
-            current_sum = 0
-            for i, fitness in enumerate(fitness_scores):
-                current_sum += fitness
-                if current_sum > selection_point:
-                    parents.append(population[i])
-                    break
+            tournament = random.sample(list(zip(population, fitness_scores)), tournament_size)
+            winner = max(tournament, key=lambda x: x[1])
+            parents.append(winner[0])
         return parents
 
     def _crossover(self, parent1: List[Tuple[int, int]], parent2: List[Tuple[int, int]], num_walls: int) -> List[Tuple[int, int]]:
-        child = []
+        if not parent1 or not parent2:
+            return parent1 or parent2
         
-        # Uniform crossover
-        for i in range(min(len(parent1), len(parent2))):
-            if random.random() < 0.5:
-                gene = parent1[i]
-            else:
-                gene = parent2[i]
-            
-            if gene not in child:
-                child.append(gene)
+        # Single-point crossover
+        crossover_point = random.randint(1, min(len(parent1), len(parent2)) - 1) if min(len(parent1), len(parent2)) > 1 else 1
+        child = parent1[:crossover_point] + parent2[crossover_point:]
 
         # Fill remaining genes if necessary
         combined = parent1 + parent2
@@ -160,9 +134,5 @@ class HybridGeneticSolver(BaseSolver):
     def _mutate(self, individual: List[Tuple[int, int]], mutation_rate: float) -> None:
         for i in range(len(individual)):
             if random.random() < mutation_rate:
-                while True:
-                    new_x = random.randint(0, self.emulator.width - 1)
-                    new_y = random.randint(0, self.emulator.height - 1)
-                    if self.emulator.grid[new_y][new_x] == ' ' and (new_x, new_y) not in individual:
-                        individual[i] = (new_x, new_y)
-                        break
+                idx1, idx2 = random.sample(range(len(individual)), 2)
+                individual[idx1], individual[idx2] = individual[idx2], individual[idx1]

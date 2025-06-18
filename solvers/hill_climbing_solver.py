@@ -1,7 +1,7 @@
 
 import random
 from typing import List, Tuple, Optional
-from pathery_emulator import PatheryEmulator
+from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 from solvers.base_solver import BaseSolver
 
 class HillClimbingSolver(BaseSolver):
