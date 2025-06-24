@@ -1,10 +1,4 @@
-
 {
-    "width": 20,
-    "height": 20,
-    "num_walls": 30,
-    "start": [10, 10],
-    "finish": [0, 0],
-    "rocks": [],
+    "map_string": "20.20.30.test...:0,f1.209,s1",
     "best_solution": 0
 }

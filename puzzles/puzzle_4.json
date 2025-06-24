@@ -1,19 +1,4 @@
 {
-    "width": 10,
-    "height": 10,
-    "num_walls": 10,
-    "start": [0, 0],
-    "finish": [9, 9],
-    "rocks": [
-        [5, 0],
-        [5, 1],
-        [5, 2],
-        [5, 3],
-        [5, 4]
-    ],
-    "checkpoints": [
-        [2, 2, "A"],
-        [7, 7, "B"]
-    ],
+    "map_string": "10.10.10.test...:0,s1.4,r1.9,r1.6,c1.2,r1.9,r1.9,r1.31,c2.21,f1",
     "best_solution": 0
 }
