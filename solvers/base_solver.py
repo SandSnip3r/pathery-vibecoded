@@ -44,6 +44,16 @@ class BaseSolver:
         open_cells = np.where(self.env.grid == CellType.OPEN.value)
         open_cells = list(zip(open_cells[1], open_cells[0]))
         random.shuffle(open_cells)
-        for i in range(min(num_walls, len(open_cells))):
-            x, y = open_cells[i]
-            self.env.step((y, x))
+        
+        walls_placed = 0
+        for x, y in open_cells:
+            if walls_placed >= num_walls:
+                break
+
+            self.env.grid[y][x] = CellType.WALL.value
+            path = self.env._calculateShortestPath()
+
+            if path is not None and path.any():
+                walls_placed += 1
+            else:
+                self.env.grid[y][x] = CellType.OPEN.value

@@ -66,23 +66,26 @@ if __name__ == '__main__':
     with open(puzzle_path, 'r') as f:
         puzzle_data = json.load(f)
 
-    builder = MapBuilder(puzzle_data['width'], puzzle_data['height'], puzzle_data['num_walls'])
-    builder.set_start(puzzle_data['start'][0], puzzle_data['start'][1])
-    builder.set_finish(puzzle_data['finish'][0], puzzle_data['finish'][1])
+    if 'map_string' in puzzle_data:
+        env = PatheryEnv.fromMapString(render_mode="ansi", map_string=puzzle_data['map_string'])
+    else:
+        builder = MapBuilder(puzzle_data['width'], puzzle_data['height'], puzzle_data['num_walls'])
+        builder.set_start(puzzle_data['start'][0], puzzle_data['start'][1])
+        builder.set_finish(puzzle_data['finish'][0], puzzle_data['finish'][1])
 
-    for rock in puzzle_data['rocks']:
-        builder.add_rock(rock[0], rock[1])
+        for rock in puzzle_data['rocks']:
+            builder.add_rock(rock[0], rock[1])
 
-    if 'checkpoints' in puzzle_data:
-        for checkpoint in puzzle_data['checkpoints']:
-            builder.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
+        if 'checkpoints' in puzzle_data:
+            for checkpoint in puzzle_data['checkpoints']:
+                builder.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
+        
+        env = PatheryEnv(render_mode="ansi", map_string=builder.build())
     
-    env = PatheryEnv(render_mode="ansi", map_string=builder.build())
     env.reset()
 
     console.print(Panel(
         f"[bold]Puzzle:[/bold] {args.puzzle}\n"
-        f"[bold]Size:[/bold] {puzzle_data['width']}x{puzzle_data['height']}\n"
         f"[bold]Solver:[/bold] {args.solver}\n"
         f"{env.render()}",
         title="[bold cyan]Pathery Puzzle Solver[/bold cyan]"
@@ -100,7 +103,7 @@ if __name__ == '__main__':
         progress.add_task("Solving puzzle...", total=None)
         best_path, best_path_length = solver.solve()
 
-    if best_path.any():
+    if best_path is not None and best_path.any():
         solution_panel = Panel(
             f"[bold]Best path found with length:[/bold] {best_path_length}\n"
             f"{env.render()}",
