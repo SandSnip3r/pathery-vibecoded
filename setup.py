@@ -1,20 +1,8 @@
-from setuptools import setup, Extension, find_packages
-import pybind11
-
-cpp_args = ["-std=c++11"]
-
-sfc_module = Extension(
-    "pathery_pathfinding",
-    ["pathery_pathfinding.cpp"],
-    include_dirs=[pybind11.get_include()],
-    language="c++",
-    extra_compile_args=cpp_args,
-)
+from setuptools import setup, find_packages
 
 setup(
-    name="pathery_pathfinding",
+    name="pathery",
     version="1.0",
-    description="A C++ extension for Pathery pathfinding",
-    ext_modules=[sfc_module],
+    description="A collection of solvers for the Pathery puzzle",
     packages=find_packages(),
 )

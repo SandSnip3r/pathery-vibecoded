@@ -1,6 +1,6 @@
 # Pathery Puzzle Solver
 
-This project is a high-performance, Python-based command-line application designed to programmatically solve puzzles from the game Pathery. It uses a variety of sophisticated solver algorithms, with its most computationally intensive components offloaded to C++, to find optimal or near-optimal solutions for a given puzzle layout.
+This project is a high-performance, Python-based command-line application designed to programmatically solve puzzles from the game Pathery. It uses a variety of sophisticated solver algorithms to find optimal or near-optimal solutions for a given puzzle layout.
 
 ## Key Features
 
@@ -10,7 +10,6 @@ This project is a high-performance, Python-based command-line application design
     *   **Hybrid Genetic Algorithm:** A sophisticated algorithm that evolves populations of wall configurations to maximize path length.
     *   **Memetic Algorithm:** A hybrid of a genetic algorithm and a local search algorithm (Hill Climbing).
     *   **Focused Search:** A focused beam search algorithm.
-*   **C++ Accelerated Pathfinding:** The A* pathfinding algorithm, a critical performance bottleneck, is implemented in C++ and seamlessly integrated with Python using `pybind11` for maximum speed.
 *   **Parallel Fitness Calculation:** The fitness of each individual in the genetic algorithm's population is calculated in parallel, significantly reducing the time required to evolve solutions.
 *   **Extensible Solver Architecture:** The project includes a flexible architecture that allows for the easy addition of new solver algorithms.
 *   **Comprehensive Tooling:** The project includes a benchmark tool for performance measurement, a suite of unit tests for ensuring correctness, and detailed logging for debugging and analysis.
@@ -22,9 +21,8 @@ This project is a high-performance, Python-based command-line application design
 *   **`experiments/`**: This directory contains markdown files that document experiments with different solver algorithms and parameters. It also includes a `template.md` for creating new experiment files.
 *   **`pathery_solver.py`**: The main entry point for the application. It loads a puzzle and a solver and runs the solver.
 *   **`PatheryEnv/`**: This directory contains the `PatheryEnv` gymnasium environment, which simulates the Pathery game board.
-*   **`pathery_pathfinding.cpp`**: A C++ implementation of the A* pathfinding algorithm, exposed to Python using `pybind11`.
 *   **`pathery_rules.md`**: A markdown file containing the rules of the Pathery game.
-*   **`setup.py`**: The build script responsible for compiling the C++ code into a Python extension and installing the `PatheryEnv` module.
+*   **`setup.py`**: The build script responsible for installing the project and its dependencies.
 *   **`tests/`**: This directory contains the unit tests for the project. `test_emulator.py` tests the game emulator, and `test_solvers.py` tests the solver algorithms.
 *   **`benchmark.py`**: A script for measuring the performance of the solver.
 *   **`config.json`**: A configuration file for the project, including paths to puzzle files, log files, and solver parameters.
@@ -32,7 +30,7 @@ This project is a high-performance, Python-based command-line application design
 ## Prerequisites
 
 *   Python 3
-*   A C++ compiler (e.g., GCC, Clang, MSVC)
+*   A C++ compiler (e.g., GCC, Clang, MSVC) for the PatheryEnv dependency
 
 ## Setup and Installation
 
@@ -48,10 +46,10 @@ This project is a high-performance, Python-based command-line application design
     ```bash
     make -C PatheryEnv/pathery_env/cpp_lib/
     ```
-4.  **Install Dependencies and Compile the C++ Module:**
+4.  **Install Dependencies and the Project:**
     ```bash
     pip install -r requirements.txt
-    python setup.py install
+    pip install -e .
     ```
 
 ## Usage
