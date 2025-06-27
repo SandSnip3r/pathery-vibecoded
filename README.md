@@ -25,7 +25,7 @@ This project is a high-performance, Python-based command-line application design
 *   **`setup.py`**: The build script responsible for installing the project and its dependencies.
 *   **`tests/`**: This directory contains the unit tests for the project. `test_emulator.py` tests the game emulator, and `test_solvers.py` tests the solver algorithms.
 *   **`benchmark.py`**: A script for measuring the performance of the solver.
-*   **`config.json`**: A configuration file for the project, including paths to puzzle files, log files, and solver parameters.
+*   **`config.json`**: A configuration file for the project, including paths to log files and solver parameters.
 
 ## Prerequisites
 
@@ -98,7 +98,6 @@ The script will print the final path length and execution time to the console, a
 
 ## Logging
 
-The application generates three log files:
+The application generates two log files in the `logs/` directory:
 *   `solver.log`: Logs the progress of the genetic algorithm, including the best score at each generation.
 *   `benchmark_results.log`: Logs the results of the benchmark runs.
-*   `test.log`: Logs the results of the test runs.

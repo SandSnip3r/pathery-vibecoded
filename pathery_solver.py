@@ -1,12 +1,13 @@
 import json
 import logging
 import argparse
+import os
 from typing import Dict, Any
 from rich.console import Console
 from rich.panel import Panel
+from utils import load_puzzle
 from rich.progress import Progress
 from pathery_env.envs.pathery import PatheryEnv
-from tests.map_builder import MapBuilder
 from solvers.base_solver import BaseSolver
 from solvers import (
     HillClimbingSolver,
@@ -76,42 +77,15 @@ if __name__ == "__main__":
         config["solvers"][args.solver]["num_generations"] = args.num_generations
 
     # Configure logging
+    log_file = os.path.join("logs", config["log_files"]["solver"])
     logging.basicConfig(
-        filename=config["log_files"]["solver"],
+        filename=log_file,
         level=logging.INFO,
         format="%(asctime)s - %(message)s",
     )
 
     # Load the puzzle
-    if args.puzzle in config["puzzle_files"]:
-        puzzle_path = config["puzzle_files"][args.puzzle]
-    else:
-        puzzle_path = args.puzzle
-
-    with open(puzzle_path, "r") as f:
-        puzzle_data = json.load(f)
-
-    if "map_string" in puzzle_data:
-        env = PatheryEnv.fromMapString(
-            render_mode="ansi", map_string=puzzle_data["map_string"]
-        )
-    else:
-        builder = MapBuilder(
-            puzzle_data["width"], puzzle_data["height"], puzzle_data["num_walls"]
-        )
-        builder.set_start(puzzle_data["start"][0], puzzle_data["start"][1])
-        builder.set_finish(puzzle_data["finish"][0], puzzle_data["finish"][1])
-
-        for rock in puzzle_data["rocks"]:
-            builder.add_rock(rock[0], rock[1])
-
-        if "checkpoints" in puzzle_data:
-            for checkpoint in puzzle_data["checkpoints"]:
-                builder.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
-
-        env = PatheryEnv(render_mode="ansi", map_string=builder.build())
-
-    env.reset()
+    env, puzzle_data = load_puzzle(args.puzzle)
 
     console.print(
         Panel(

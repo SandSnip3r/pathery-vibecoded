@@ -3,7 +3,9 @@ import time
 import logging
 import argparse
 import statistics
-from pathery_solver import solver_factory, load_puzzle, load_config
+import os
+from pathery_solver import solver_factory, load_config
+from utils import load_puzzle
 
 
 def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> None:
@@ -11,7 +13,7 @@ def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> Non
     Runs benchmarks for given puzzles and solvers and generates a performance report.
     """
     config = load_config()
-    log_file = config["log_files"]["benchmark"]
+    log_file = os.path.join("logs", config["log_files"]["benchmark"])
     logging.basicConfig(
         filename=log_file, level=logging.INFO, format="%(asctime)s - %(message)s"
     )
@@ -37,10 +39,9 @@ def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> Non
             print(f"Running benchmark for {solver_name} on {puzzle_name}...")
             for i in range(num_runs):
                 print(f"  Run {i+1}/{num_runs}...")
-                game, best_known_solution = load_puzzle(
-                    config["puzzle_files"][puzzle_name]
-                )
-                solver = solver_factory(solver_name, game, config, best_known_solution)
+                game, puzzle_data = load_puzzle(puzzle_name)
+                solver_config = config["solvers"].get(solver_name, {})
+                solver = solver_factory(solver_name, game, **solver_config)
 
                 start_time = time.time()
                 _, best_path_length = solver.solve()
