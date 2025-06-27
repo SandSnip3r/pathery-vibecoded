@@ -1,4 +1,3 @@
-
 import time
 import random
 from typing import List, Tuple, Optional
@@ -6,12 +5,19 @@ from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
 import numpy as np
 
+
 class HillClimbingSolver(BaseSolver):
     """
     A solver that uses the hill-climbing algorithm.
     """
 
-    def __init__(self, env: PatheryEnv, num_restarts: int = 10, best_known_solution: int = 0, time_limit: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        env: PatheryEnv,
+        num_restarts: int = 10,
+        best_known_solution: int = 0,
+        time_limit: Optional[int] = None,
+    ) -> None:
         """
         Initializes the HillClimbingSolver.
 
@@ -42,7 +48,9 @@ class HillClimbingSolver(BaseSolver):
             self._clear_walls()
             self._randomly_place_walls(self.env.wallsToPlace)
 
-            _, path_length, final_walls = self._hill_climb_optimizer(self.env.wallsToPlace)
+            _, path_length, final_walls = self._hill_climb_optimizer(
+                self.env.wallsToPlace
+            )
 
             if path_length > best_path_length:
                 best_path_length = path_length
@@ -52,14 +60,15 @@ class HillClimbingSolver(BaseSolver):
                     self.env.grid[y][x] = CellType.WALL.value
                 best_path = self.env._calculateShortestPath()
 
-
         # Restore the best grid found
         if best_grid is not None:
             self.env.grid = best_grid
 
         return best_path, best_path_length
 
-    def _hill_climb_optimizer(self, num_walls: int, max_steps: int = 5, num_samples: int = 5) -> Tuple[Optional[List[Tuple[int, int]]], int, List[Tuple[int, int]]]:
+    def _hill_climb_optimizer(
+        self, num_walls: int, max_steps: int = 5, num_samples: int = 5
+    ) -> Tuple[Optional[List[Tuple[int, int]]], int, List[Tuple[int, int]]]:
         """
         Optimizes a single wall configuration by hill climbing.
         """
@@ -83,7 +92,9 @@ class HillClimbingSolver(BaseSolver):
                 break
 
             for x_wall, y_wall in wall_positions:
-                for x_new, y_new in random.sample(empty_squares, min(len(empty_squares), num_samples)):
+                for x_new, y_new in random.sample(
+                    empty_squares, min(len(empty_squares), num_samples)
+                ):
                     self.env.grid[y_wall][x_wall] = CellType.OPEN.value
                     self.env.grid[y_new][x_new] = CellType.WALL.value
 
@@ -103,7 +114,9 @@ class HillClimbingSolver(BaseSolver):
                 break
 
         final_wall_positions = np.where(self.env.grid == CellType.WALL.value)
-        final_wall_positions = list(zip(final_wall_positions[1], final_wall_positions[0]))
+        final_wall_positions = list(
+            zip(final_wall_positions[1], final_wall_positions[0])
+        )
 
         final_path = self.env._calculateShortestPath()
         return final_path, len(final_path), final_wall_positions

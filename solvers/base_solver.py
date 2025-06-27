@@ -1,16 +1,21 @@
-
 import time
 import random
 import numpy as np
 from typing import Tuple, List, Optional
 from pathery_env.envs.pathery import PatheryEnv, CellType
 
+
 class BaseSolver:
     """
     A base class for Pathery solvers.
     """
 
-    def __init__(self, env: PatheryEnv, best_known_solution: int = 0, time_limit: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        env: PatheryEnv,
+        best_known_solution: int = 0,
+        time_limit: Optional[int] = None,
+    ) -> None:
         """
         Initializes the BaseSolver.
 

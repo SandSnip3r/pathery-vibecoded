@@ -1,18 +1,27 @@
-
 import time
 from typing import Tuple, List, Optional, Any
-from pathery_env.envs.pathery import PatheryEnv, CellType
+from pathery_env.envs.pathery import PatheryEnv
 from solvers.base_solver import BaseSolver
 from solvers.hybrid_genetic_solver import HybridGeneticSolver
 from solvers.hill_climbing_solver import HillClimbingSolver
-import numpy as np
+
 
 class MemeticSolver(BaseSolver):
     """
     A solver that uses a memetic algorithm.
     """
 
-    def __init__(self, env: PatheryEnv, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0, time_limit: Optional[int] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        env: PatheryEnv,
+        population_size: int = 100,
+        num_generations: int = 200,
+        mutation_rate: float = 0.01,
+        elite_size: int = 5,
+        best_known_solution: int = 0,
+        time_limit: Optional[int] = None,
+        **kwargs: Any
+    ) -> None:
         """
         Initializes the MemeticSolver.
 
@@ -51,7 +60,7 @@ class MemeticSolver(BaseSolver):
             self.mutation_rate,
             self.elite_size,
             self.best_known_solution,
-            time_limit=genetic_time_limit
+            time_limit=genetic_time_limit,
         )
         best_path, _ = genetic_solver.solve()
 
@@ -60,13 +69,23 @@ class MemeticSolver(BaseSolver):
             self._clear_walls()
             self._randomly_place_walls(self.env.wallsToPlace)
 
-        hill_climbing_time_limit = self.time_limit - (time.time() - self.start_time) if self.time_limit else None
-        hill_climbing_solver = HillClimbingSolver(self.env, num_restarts=self.hill_climbing_restarts, time_limit=hill_climbing_time_limit)
-        best_path, best_path_length, final_walls = hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)
+        hill_climbing_time_limit = (
+            self.time_limit - (time.time() - self.start_time)
+            if self.time_limit
+            else None
+        )
+        hill_climbing_solver = HillClimbingSolver(
+            self.env,
+            num_restarts=self.hill_climbing_restarts,
+            time_limit=hill_climbing_time_limit,
+        )
+        best_path, best_path_length, final_walls = (
+            hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)
+        )
 
         self._clear_walls()
         self.env.remainingWalls = self.env.wallsToPlace
         for x, y in final_walls:
-            self.env.step((y,x))
+            self.env.step((y, x))
 
         return best_path, best_path_length

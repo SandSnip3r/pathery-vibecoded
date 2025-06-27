@@ -27,5 +27,3 @@ The migration was performed to take advantage of the more robust and feature-ric
 - A more efficient and robust pathfinding implementation.
 
 The changes made during the migration were necessary to ensure that the project continues to function correctly after the switch to the new environment.
-
-

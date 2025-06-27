@@ -1,4 +1,3 @@
-
 import random
 import math
 from typing import Tuple, List, Optional
@@ -6,12 +5,19 @@ from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
 import numpy as np
 
+
 class SimulatedAnnealingSolver(BaseSolver):
     """
     A solver that uses the simulated annealing algorithm.
     """
 
-    def __init__(self, env: PatheryEnv, initial_temp: float = 1000, cooling_rate: float = 0.003, best_known_solution: int = 0) -> None:
+    def __init__(
+        self,
+        env: PatheryEnv,
+        initial_temp: float = 1000,
+        cooling_rate: float = 0.003,
+        best_known_solution: int = 0,
+    ) -> None:
         """
         Initializes the SimulatedAnnealingSolver.
 
@@ -79,13 +85,17 @@ class SimulatedAnnealingSolver(BaseSolver):
                         best_grid = self.env.grid.copy()
                 # If the new solution is worse, accept it with a certain probability
                 else:
-                    acceptance_probability = math.exp((new_path_length - current_path_length) / temp)
+                    acceptance_probability = math.exp(
+                        (new_path_length - current_path_length) / temp
+                    )
                     if random.random() < acceptance_probability:
                         current_path_length = new_path_length
                     else:
                         # Revert the change
                         self.env.grid[new_y][new_x] = CellType.OPEN.value
-                        self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.WALL.value
+                        self.env.grid[wall_to_move[1]][
+                            wall_to_move[0]
+                        ] = CellType.WALL.value
             else:
                 # Revert the change
                 self.env.grid[new_y][new_x] = CellType.OPEN.value

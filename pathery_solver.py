@@ -1,8 +1,7 @@
-
 import json
 import logging
 import argparse
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
@@ -17,9 +16,11 @@ from solvers import (
     FocusedSearchSolver,
 )
 
-def load_config(path: str = 'config.json') -> Dict[str, Any]:
-    with open(path, 'r') as f:
+
+def load_config(path: str = "config.json") -> Dict[str, Any]:
+    with open(path, "r") as f:
         return json.load(f)
+
 
 def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
     """
@@ -38,12 +39,27 @@ def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
 
     return solver_class(env, **kwargs)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("puzzle", help="The name of the puzzle to solve (e.g., puzzle_1) or the path to a puzzle file.")
-    parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search).")
-    parser.add_argument("--num_generations", type=int, help="Number of generations for genetic algorithms.")
-    parser.add_argument("--time_limit", type=int, help="Time limit in seconds for the solver.")
+    parser.add_argument(
+        "puzzle",
+        help="The name of the puzzle to solve (e.g., puzzle_1) or the path to a puzzle file.",
+    )
+    parser.add_argument(
+        "--solver",
+        type=str,
+        default="memetic",
+        help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search).",
+    )
+    parser.add_argument(
+        "--num_generations",
+        type=int,
+        help="Number of generations for genetic algorithms.",
+    )
+    parser.add_argument(
+        "--time_limit", type=int, help="Time limit in seconds for the solver."
+    )
     args = parser.parse_args()
 
     console = Console()
@@ -52,50 +68,64 @@ if __name__ == '__main__':
     config = load_config()
 
     # Override config with command-line arguments if provided
-    if args.num_generations and args.solver in config['solvers'] and 'num_generations' in config['solvers'][args.solver]:
-        config['solvers'][args.solver]['num_generations'] = args.num_generations
+    if (
+        args.num_generations
+        and args.solver in config["solvers"]
+        and "num_generations" in config["solvers"][args.solver]
+    ):
+        config["solvers"][args.solver]["num_generations"] = args.num_generations
 
     # Configure logging
-    logging.basicConfig(filename=config['log_files']['solver'], level=logging.INFO, format='%(asctime)s - %(message)s')
+    logging.basicConfig(
+        filename=config["log_files"]["solver"],
+        level=logging.INFO,
+        format="%(asctime)s - %(message)s",
+    )
 
     # Load the puzzle
-    if args.puzzle in config['puzzle_files']:
-        puzzle_path = config['puzzle_files'][args.puzzle]
+    if args.puzzle in config["puzzle_files"]:
+        puzzle_path = config["puzzle_files"][args.puzzle]
     else:
         puzzle_path = args.puzzle
 
-    with open(puzzle_path, 'r') as f:
+    with open(puzzle_path, "r") as f:
         puzzle_data = json.load(f)
 
-    if 'map_string' in puzzle_data:
-        env = PatheryEnv.fromMapString(render_mode="ansi", map_string=puzzle_data['map_string'])
+    if "map_string" in puzzle_data:
+        env = PatheryEnv.fromMapString(
+            render_mode="ansi", map_string=puzzle_data["map_string"]
+        )
     else:
-        builder = MapBuilder(puzzle_data['width'], puzzle_data['height'], puzzle_data['num_walls'])
-        builder.set_start(puzzle_data['start'][0], puzzle_data['start'][1])
-        builder.set_finish(puzzle_data['finish'][0], puzzle_data['finish'][1])
+        builder = MapBuilder(
+            puzzle_data["width"], puzzle_data["height"], puzzle_data["num_walls"]
+        )
+        builder.set_start(puzzle_data["start"][0], puzzle_data["start"][1])
+        builder.set_finish(puzzle_data["finish"][0], puzzle_data["finish"][1])
 
-        for rock in puzzle_data['rocks']:
+        for rock in puzzle_data["rocks"]:
             builder.add_rock(rock[0], rock[1])
 
-        if 'checkpoints' in puzzle_data:
-            for checkpoint in puzzle_data['checkpoints']:
+        if "checkpoints" in puzzle_data:
+            for checkpoint in puzzle_data["checkpoints"]:
                 builder.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
 
         env = PatheryEnv(render_mode="ansi", map_string=builder.build())
 
     env.reset()
 
-    console.print(Panel(
-        f"[bold]Puzzle:[/bold] {args.puzzle}\n"
-        f"[bold]Solver:[/bold] {args.solver}\n"
-        f"{env.render()}",
-        title="[bold cyan]Pathery Puzzle Solver[/bold cyan]"
-    ))
+    console.print(
+        Panel(
+            f"[bold]Puzzle:[/bold] {args.puzzle}\n"
+            f"[bold]Solver:[/bold] {args.solver}\n"
+            f"{env.render()}",
+            title="[bold cyan]Pathery Puzzle Solver[/bold cyan]",
+        )
+    )
 
     # Create a solver
-    solver_config = config['solvers'].get(args.solver, {})
+    solver_config = config["solvers"].get(args.solver, {})
     if args.time_limit:
-        solver_config['time_limit'] = args.time_limit
+        solver_config["time_limit"] = args.time_limit
     solver = solver_factory(args.solver, env, **solver_config)
 
     # Find the best path
@@ -110,10 +140,18 @@ if __name__ == '__main__':
         solution_panel = Panel(
             f"[bold]Best path found with length:[/bold] {best_path_length}\n"
             f"{env.render()}",
-            title="[bold green]Solution Found![/bold green]"
+            title="[bold green]Solution Found![/bold green]",
         )
-        if puzzle_data['best_solution'] == 0 or best_path_length > puzzle_data['best_solution']:
+        if (
+            puzzle_data["best_solution"] == 0
+            or best_path_length > puzzle_data["best_solution"]
+        ):
             console.print("[bold yellow]New best solution found![/bold yellow]")
         console.print(solution_panel)
     else:
-        console.print(Panel("[bold red]No path found.[/bold red]", title="[bold red]Solver Failed[/bold red]"))
+        console.print(
+            Panel(
+                "[bold red]No path found.[/bold red]",
+                title="[bold red]Solver Failed[/bold red]",
+            )
+        )
