@@ -1,4 +1,5 @@
 
+import time
 import random
 import numpy as np
 from typing import Tuple, List, Optional
@@ -9,21 +10,25 @@ class BaseSolver:
     A base class for Pathery solvers.
     """
 
-    def __init__(self, env: PatheryEnv, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, best_known_solution: int = 0, time_limit: Optional[int] = None) -> None:
         """
         Initializes the BaseSolver.
 
         Args:
             env (PatheryEnv): An instance of the PatheryEnv.
             best_known_solution (int): The best known solution length.
+            time_limit (Optional[int]): The time limit in seconds for the solver.
         """
         self.env = env
         self.best_known_solution = best_known_solution
+        self.time_limit = time_limit
+        self.start_time = None
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
         This method should be implemented by subclasses.
         """
+        self.start_time = time.time()
         raise NotImplementedError
 
     def _clear_walls(self) -> None:

@@ -1,4 +1,5 @@
 
+import time
 import random
 from typing import List, Tuple, Optional
 from pathery_env.envs.pathery import PatheryEnv, CellType
@@ -10,15 +11,16 @@ class HillClimbingSolver(BaseSolver):
     A solver that uses the hill-climbing algorithm.
     """
 
-    def __init__(self, env: PatheryEnv, num_restarts: int = 10, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, num_restarts: int = 10, best_known_solution: int = 0, time_limit: Optional[int] = None) -> None:
         """
         Initializes the HillClimbingSolver.
 
         Args:
             env (PatheryEnv): An instance of the PatheryEnv.
             num_restarts (int): The number of times to restart the algorithm.
+            time_limit (Optional[int]): The time limit in seconds for the solver.
         """
-        super().__init__(env, best_known_solution)
+        super().__init__(env, best_known_solution, time_limit)
         self.num_restarts = num_restarts
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
@@ -28,11 +30,15 @@ class HillClimbingSolver(BaseSolver):
         Returns:
             tuple: A tuple containing the best path found and its length.
         """
+        self.start_time = time.time()
         best_path = None
         best_path_length = 0
         best_grid = None
 
-        for _ in range(self.num_restarts):
+        for i in range(self.num_restarts):
+            if self.time_limit and (time.time() - self.start_time) > self.time_limit:
+                print(f"Time limit reached. Exiting after {i} restarts.")
+                break
             self._clear_walls()
             self._randomly_place_walls(self.env.wallsToPlace)
             

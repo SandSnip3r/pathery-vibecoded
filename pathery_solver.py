@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument("puzzle", help="The name of the puzzle to solve (e.g., puzzle_1) or the path to a puzzle file.")
     parser.add_argument("--solver", type=str, default="memetic", help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search).")
     parser.add_argument("--num_generations", type=int, help="Number of generations for genetic algorithms.")
+    parser.add_argument("--time_limit", type=int, help="Time limit in seconds for the solver.")
     args = parser.parse_args()
 
     console = Console()
@@ -93,6 +94,8 @@ if __name__ == '__main__':
 
     # Create a solver
     solver_config = config['solvers'].get(args.solver, {})
+    if args.time_limit:
+        solver_config['time_limit'] = args.time_limit
     solver = solver_factory(args.solver, env, **solver_config)
 
     # Find the best path

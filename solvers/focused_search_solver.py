@@ -1,4 +1,5 @@
 
+import time
 from typing import Tuple, List, Optional, Any
 from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
@@ -11,7 +12,7 @@ class FocusedSearchSolver(BaseSolver):
     A solver that uses a focused beam search algorithm.
     """
 
-    def __init__(self, env: PatheryEnv, beam_width: int = 10, search_depth: int = 5, best_known_solution: int = 0, **kwargs: Any) -> None:
+    def __init__(self, env: PatheryEnv, beam_width: int = 10, search_depth: int = 5, best_known_solution: int = 0, time_limit: Optional[int] = None, **kwargs: Any) -> None:
         """
         Initializes the FocusedSearchSolver.
 
@@ -20,8 +21,9 @@ class FocusedSearchSolver(BaseSolver):
             beam_width (int): The number of candidates to keep in the beam.
             search_depth (int): The depth of the search.
             best_known_solution (int): The best known solution length.
+            time_limit (Optional[int]): The time limit in seconds for the solver.
         """
-        super().__init__(env, best_known_solution)
+        super().__init__(env, best_known_solution, time_limit)
         self.beam_width = beam_width
         self.search_depth = search_depth
 
@@ -32,6 +34,7 @@ class FocusedSearchSolver(BaseSolver):
         Returns:
             tuple: A tuple containing the best path found and its length.
         """
+        self.start_time = time.time()
         self._clear_walls()
         self._randomly_place_walls(self.env.wallsToPlace)
         
@@ -47,7 +50,10 @@ class FocusedSearchSolver(BaseSolver):
         best_length = initial_length
         best_walls = initial_walls
 
-        for _ in range(self.search_depth):
+        for i in range(self.search_depth):
+            if self.time_limit and (time.time() - self.start_time) > self.time_limit:
+                print(f"Time limit reached. Exiting after {i} iterations.")
+                break
             candidates = []
             for length, walls in beam:
                 for new_walls in self._get_neighbors(walls):

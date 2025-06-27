@@ -1,4 +1,5 @@
 
+import time
 import random
 import logging
 from multiprocessing import Pool
@@ -29,7 +30,7 @@ class HybridGeneticSolver(BaseSolver):
     A solver that uses a hybrid genetic algorithm.
     """
 
-    def __init__(self, env: PatheryEnv, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0) -> None:
+    def __init__(self, env: PatheryEnv, population_size: int = 100, num_generations: int = 200, mutation_rate: float = 0.01, elite_size: int = 5, best_known_solution: int = 0, time_limit: Optional[int] = None, **kwargs) -> None:
         """
         Initializes the HybridGeneticSolver.
 
@@ -40,13 +41,13 @@ class HybridGeneticSolver(BaseSolver):
             mutation_rate (float): The probability of a mutation occurring.
             elite_size (int): The number of top individuals to carry over to the next generation.
             best_known_solution (int): The best known solution length.
+            time_limit (Optional[int]): The time limit in seconds for the solver.
         """
-        super().__init__(env)
+        super().__init__(env, best_known_solution, time_limit)
         self.population_size = population_size
         self.num_generations = num_generations
         self.mutation_rate = mutation_rate
         self.elite_size = elite_size
-        self.best_known_solution = best_known_solution
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
         """
@@ -55,6 +56,7 @@ class HybridGeneticSolver(BaseSolver):
         Returns:
             tuple: A tuple containing the best path found and its length.
         """
+        self.start_time = time.time()
         best_path_length = 0
         best_individual = None
 
@@ -69,6 +71,9 @@ class HybridGeneticSolver(BaseSolver):
 
         with Pool(initializer=_init_worker, initargs=(self.env,)) as pool:
             for generation in range(self.num_generations):
+                if self.time_limit and (time.time() - self.start_time) > self.time_limit:
+                    logging.info(f"Time limit reached. Exiting after {generation} generations.")
+                    break
                 # Dynamic mutation rate
                 current_mutation_rate = max(0.01, self.mutation_rate * (0.95 ** generation))
 
@@ -89,7 +94,8 @@ class HybridGeneticSolver(BaseSolver):
                                 self._clear_walls()
                                 for x, y in best_individual:
                                     self.env.step((y,x))
-                            return best_individual, best_path_length
+                            best_path = self.env._calculateShortestPath()
+                            return best_path, best_path_length
 
                 # Select parents and carry over elites
                 sorted_population = [x for _, x in sorted(zip(results, population), key=lambda pair: pair[0][0], reverse=True)]
@@ -111,8 +117,10 @@ class HybridGeneticSolver(BaseSolver):
             self._clear_walls()
             for x, y in best_individual:
                 self.env.step((y,x))
+        
+        best_path = self.env._calculateShortestPath()
 
-        return best_individual, best_path_length
+        return best_path, best_path_length
 
     def _select_parents(self, population: List[List[Tuple[int, int]]], fitness_scores: List[int], tournament_size: int = 3) -> List[List[Tuple[int, int]]]:
         parents = []
