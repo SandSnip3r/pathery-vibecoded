@@ -1,7 +1,0 @@
-README.md
-pathery_pathfinding.cpp
-setup.py
-pathery_pathfinding.egg-info/PKG-INFO
-pathery_pathfinding.egg-info/SOURCES.txt
-pathery_pathfinding.egg-info/dependency_links.txt
-pathery_pathfinding.egg-info/top_level.txt
