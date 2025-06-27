@@ -1,7 +1,7 @@
 import time
 import random
 import numpy as np
-from typing import Tuple, List, Optional
+from typing import Tuple, Optional
 from pathery_env.envs.pathery import PatheryEnv, CellType
 
 
@@ -29,7 +29,7 @@ class BaseSolver:
         self.time_limit = time_limit
         self.start_time = None
 
-    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
+    def solve(self) -> Tuple[Optional[np.ndarray], int]:
         """
         This method should be implemented by subclasses.
         """
