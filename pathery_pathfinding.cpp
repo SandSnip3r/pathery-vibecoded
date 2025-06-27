@@ -51,7 +51,7 @@ std::vector<std::pair<int, int>> find_path_cpp(
 
             if (nx >= 0 && nx < width && ny >= 0 && ny < height &&
                 !wall_set.count({nx, ny}) && !rock_set.count({nx, ny})) {
-                
+
                 std::vector<std::pair<int, int>> new_path = current.path;
                 new_path.push_back({nx, ny});
                 pq.push({nx, ny, (int)new_path.size(), new_path});

@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # Override config with command-line arguments if provided
     if args.num_generations and args.solver in config['solvers'] and 'num_generations' in config['solvers'][args.solver]:
         config['solvers'][args.solver]['num_generations'] = args.num_generations
-    
+
     # Configure logging
     logging.basicConfig(filename=config['log_files']['solver'], level=logging.INFO, format='%(asctime)s - %(message)s')
 
@@ -80,9 +80,9 @@ if __name__ == '__main__':
         if 'checkpoints' in puzzle_data:
             for checkpoint in puzzle_data['checkpoints']:
                 builder.add_checkpoint(checkpoint[0], checkpoint[1], checkpoint[2])
-        
+
         env = PatheryEnv(render_mode="ansi", map_string=builder.build())
-    
+
     env.reset()
 
     console.print(Panel(

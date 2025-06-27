@@ -51,16 +51,16 @@ class TestSolverBug(unittest.TestCase):
         map_string = MapBuilder(10, 10, 5).set_start(0, 0).set_finish(9, 9).build()
         env = PatheryEnv(render_mode=None, map_string=map_string)
         env.reset()
-        
+
         solver = solver_factory("hybrid_genetic", env)
         best_walls, best_path_length = solver.solve()
-        
+
         self.assertIsNotNone(best_walls)
-        
+
         # Log the final grid state
         logging.info("Final grid state:")
         logging.info(env.render())
-            
+
         final_path = env._calculateShortestPath()
         self.assertIsNotNone(final_path)
         self.assertEqual(best_path_length, len(final_path))

@@ -46,10 +46,10 @@ def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> Non
             mean_duration = statistics.mean(durations) if durations else 0
 
             result = f"| {solver_name} | {min_path} | {max_path} | {mean_path:.2f} | {mean_duration:.4f} |"
-            
+
             with open("benchmarks/solver_performance.md", "a") as f:
                 f.write(result + "\n")
-            
+
             logging.info(f"Benchmark Result for {puzzle_name} with {solver_name}: {result}")
             print(f"Benchmark complete for {solver_name} on {puzzle_name}.")
 

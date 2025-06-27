@@ -42,7 +42,7 @@ class MemeticSolver(BaseSolver):
         self.start_time = time.time()
 
         genetic_time_limit = self.time_limit * 0.8 if self.time_limit else None
-        
+
         # First, run the genetic algorithm to find a good starting solution
         genetic_solver = HybridGeneticSolver(
             self.env,
@@ -59,7 +59,7 @@ class MemeticSolver(BaseSolver):
         if not best_path.any():
             self._clear_walls()
             self._randomly_place_walls(self.env.wallsToPlace)
-        
+
         hill_climbing_time_limit = self.time_limit - (time.time() - self.start_time) if self.time_limit else None
         hill_climbing_solver = HillClimbingSolver(self.env, num_restarts=self.hill_climbing_restarts, time_limit=hill_climbing_time_limit)
         best_path, best_path_length, final_walls = hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)

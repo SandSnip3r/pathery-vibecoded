@@ -37,7 +37,7 @@ class FocusedSearchSolver(BaseSolver):
         self.start_time = time.time()
         self._clear_walls()
         self._randomly_place_walls(self.env.wallsToPlace)
-        
+
         initial_walls = np.where(self.env.grid == CellType.WALL.value)
         initial_walls = list(zip(initial_walls[1], initial_walls[0]))
         initial_path = self.env._calculateShortestPath()
@@ -97,11 +97,11 @@ class FocusedSearchSolver(BaseSolver):
         neighbors = []
         empty_cells = np.where(self.env.grid == CellType.OPEN.value)
         empty_cells = list(zip(empty_cells[1], empty_cells[0]))
-        
+
         for i, wall_to_move in enumerate(walls):
             for empty_cell in random.sample(empty_cells, min(len(empty_cells), 10)):
                 new_walls = walls[:i] + walls[i+1:]
                 new_walls.append(empty_cell)
                 neighbors.append(new_walls)
-        
+
         return neighbors

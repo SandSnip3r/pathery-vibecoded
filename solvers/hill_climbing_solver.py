@@ -41,7 +41,7 @@ class HillClimbingSolver(BaseSolver):
                 break
             self._clear_walls()
             self._randomly_place_walls(self.env.wallsToPlace)
-            
+
             _, path_length, final_walls = self._hill_climb_optimizer(self.env.wallsToPlace)
 
             if path_length > best_path_length:
@@ -101,7 +101,7 @@ class HillClimbingSolver(BaseSolver):
                 current_path_length = best_neighbor_path_length
             else:
                 break
-        
+
         final_wall_positions = np.where(self.env.grid == CellType.WALL.value)
         final_wall_positions = list(zip(final_wall_positions[1], final_wall_positions[0]))
 

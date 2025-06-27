@@ -49,7 +49,7 @@ class BaseSolver:
         open_cells = np.where(self.env.grid == CellType.OPEN.value)
         open_cells = list(zip(open_cells[1], open_cells[0]))
         random.shuffle(open_cells)
-        
+
         walls_placed = 0
         for x, y in open_cells:
             if walls_placed >= num_walls:

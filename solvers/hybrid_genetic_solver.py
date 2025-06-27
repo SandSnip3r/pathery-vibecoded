@@ -13,14 +13,14 @@ def _init_worker(env: PatheryEnv) -> None:
     solver_env = env
 
 def _calculate_fitness(individual: List[Tuple[int, int]]) -> Tuple[int, List[Tuple[int, int]]]:
-    
+
     wall_locations = np.where(solver_env.grid == CellType.WALL.value)
     for y, x in zip(wall_locations[0], wall_locations[1]):
         solver_env.grid[y][x] = CellType.OPEN.value
 
     for x, y in individual:
         solver_env.step((y,x))
-    
+
     path = solver_env._calculateShortestPath()
     return len(path), individual
 
@@ -79,7 +79,7 @@ class HybridGeneticSolver(BaseSolver):
 
                 logging.info(f"Generation {generation + 1}/{self.num_generations}, Best score so far: {best_path_length}, Mutation rate: {current_mutation_rate:.4f}")
                 logging.getLogger().handlers[0].flush()
-                
+
                 # Asynchronously calculate fitness for the population
                 results = pool.map(_calculate_fitness, population)
 
@@ -117,7 +117,7 @@ class HybridGeneticSolver(BaseSolver):
             self._clear_walls()
             for x, y in best_individual:
                 self.env.step((y,x))
-        
+
         best_path = self.env._calculateShortestPath()
 
         return best_path, best_path_length
@@ -133,7 +133,7 @@ class HybridGeneticSolver(BaseSolver):
     def _crossover(self, parent1: List[Tuple[int, int]], parent2: List[Tuple[int, int]], num_walls: int) -> List[Tuple[int, int]]:
         if not parent1 or not parent2:
             return parent1 or parent2
-        
+
         # Single-point crossover
         crossover_point = random.randint(1, min(len(parent1), len(parent2)) - 1) if min(len(parent1), len(parent2)) > 1 else 1
         child = parent1[:crossover_point] + parent2[crossover_point:]
@@ -145,7 +145,7 @@ class HybridGeneticSolver(BaseSolver):
                 break
             if gene not in child:
                 child.append(gene)
-                
+
         return child
 
     def _mutate(self, individual: List[Tuple[int, int]], mutation_rate: float) -> None:

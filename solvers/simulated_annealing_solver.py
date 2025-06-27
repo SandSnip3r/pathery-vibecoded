@@ -54,7 +54,7 @@ class SimulatedAnnealingSolver(BaseSolver):
                 break
 
             wall_to_move = random.choice(wall_positions)
-            
+
             empty_cells = np.where(self.env.grid == CellType.OPEN.value)
             empty_cells = list(zip(empty_cells[1], empty_cells[0]))
 
@@ -62,7 +62,7 @@ class SimulatedAnnealingSolver(BaseSolver):
                 break
 
             new_x, new_y = random.choice(empty_cells)
-            
+
             self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.OPEN.value
             self.env.grid[new_y][new_x] = CellType.WALL.value
 
