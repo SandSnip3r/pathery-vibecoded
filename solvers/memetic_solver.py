@@ -66,7 +66,7 @@ class MemeticSolver(BaseSolver):
 
         # If the genetic algorithm didn't find a solution, start with a random one
         if not best_path.any():
-            self._clear_walls()
+            self.env.reset()
             self._randomly_place_walls(self.env.wallsToPlace)
 
         hill_climbing_time_limit = (
@@ -83,7 +83,7 @@ class MemeticSolver(BaseSolver):
             hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)
         )
 
-        self._clear_walls()
+        self.env.reset()
         self.env.remainingWalls = self.env.wallsToPlace
         for x, y in final_walls:
             self.env.step((y, x))

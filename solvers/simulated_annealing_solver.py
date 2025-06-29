@@ -1,5 +1,6 @@
 import random
 import math
+import time
 from typing import Tuple, List, Optional
 from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
@@ -17,6 +18,7 @@ class SimulatedAnnealingSolver(BaseSolver):
         initial_temp: float = 1000,
         cooling_rate: float = 0.003,
         best_known_solution: int = 0,
+        time_limit: Optional[int] = None,
     ) -> None:
         """
         Initializes the SimulatedAnnealingSolver.
@@ -26,7 +28,7 @@ class SimulatedAnnealingSolver(BaseSolver):
             initial_temp (float): The initial temperature.
             cooling_rate (float): The rate at which the temperature cools.
         """
-        super().__init__(env, best_known_solution)
+        super().__init__(env, best_known_solution, time_limit)
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
 
@@ -37,7 +39,7 @@ class SimulatedAnnealingSolver(BaseSolver):
         Returns:
             tuple: A tuple containing the best path found and its length.
         """
-        self._clear_walls()
+        self.env.reset()
         self._randomly_place_walls(self.env.wallsToPlace)
 
         current_path = self.env._calculateShortestPath()
@@ -50,8 +52,11 @@ class SimulatedAnnealingSolver(BaseSolver):
         best_grid = self.env.grid.copy()
 
         temp = self.initial_temp
+        self.start_time = time.time()
 
         while temp > 1:
+            if self.time_limit and (time.time() - self.start_time) > self.time_limit:
+                break
             # Create a neighbor by moving a random wall
             wall_positions = np.where(self.env.grid == CellType.WALL.value)
             wall_positions = list(zip(wall_positions[1], wall_positions[0]))

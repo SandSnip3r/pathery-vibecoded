@@ -16,11 +16,7 @@ def _init_worker(env: PatheryEnv) -> None:
 def _calculate_fitness(
     individual: List[Tuple[int, int]]
 ) -> Tuple[int, List[Tuple[int, int]]]:
-
-    wall_locations = np.where(solver_env.grid == CellType.WALL.value)
-    for y, x in zip(wall_locations[0], wall_locations[1]):
-        solver_env.grid[y][x] = CellType.OPEN.value
-
+    solver_env.reset()
     for x, y in individual:
         solver_env.step((y, x))
 
@@ -76,7 +72,7 @@ class HybridGeneticSolver(BaseSolver):
         # Initialize population
         population = [[] for _ in range(self.population_size)]
         for i in range(self.population_size):
-            self._clear_walls()
+            self.env.reset()
             self._randomly_place_walls(self.env.wallsToPlace)
             wall_locations = np.where(self.env.grid == CellType.WALL.value)
             population[i] = list(zip(wall_locations[1], wall_locations[0]))
@@ -117,7 +113,7 @@ class HybridGeneticSolver(BaseSolver):
                             )
                             # Restore the best grid found
                             if best_individual:
-                                self._clear_walls()
+                                self.env.reset()
                                 for x, y in best_individual:
                                     self.env.step((y, x))
                             best_path = self.env._calculateShortestPath()
@@ -147,7 +143,7 @@ class HybridGeneticSolver(BaseSolver):
 
         # Restore the best grid found
         if best_individual:
-            self._clear_walls()
+            self.env.reset()
             for x, y in best_individual:
                 self.env.step((y, x))
 
@@ -195,7 +191,7 @@ class HybridGeneticSolver(BaseSolver):
             if gene not in child:
                 child.append(gene)
 
-        return child
+        return child[:num_walls]
 
     def _mutate(self, individual: List[Tuple[int, int]], mutation_rate: float) -> None:
         for i in range(len(individual)):

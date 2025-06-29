@@ -45,7 +45,7 @@ class HillClimbingSolver(BaseSolver):
             if self.time_limit and (time.time() - self.start_time) > self.time_limit:
                 print(f"Time limit reached. Exiting after {i} restarts.")
                 break
-            self._clear_walls()
+            self.env.reset()
             self._randomly_place_walls(self.env.wallsToPlace)
 
             _, path_length, final_walls = self._hill_climb_optimizer(
@@ -55,7 +55,7 @@ class HillClimbingSolver(BaseSolver):
             if path_length > best_path_length:
                 best_path_length = path_length
                 best_grid = self.env.grid.copy()
-                self._clear_walls()
+                self.env.reset()
                 for x, y in final_walls:
                     self.env.grid[y][x] = CellType.WALL.value
                 best_path = self.env._calculateShortestPath()
