@@ -72,7 +72,7 @@ class FocusedSearchSolver(BaseSolver):
                         f"Stepping with {len(new_walls)} walls in the main loop"
                     )
                     for x, y in new_walls:
-                        self.env.step((y, x))
+                        self._add_wall(x, y)
                     path = self.env._calculateShortestPath()
                     if path.any():
                         heapq.heappush(candidates, (-len(path), new_walls))
@@ -98,7 +98,7 @@ class FocusedSearchSolver(BaseSolver):
         self.env.reset()
         logging.info(f"Stepping with {len(best_walls)} walls at the end")
         for x, y in best_walls:
-            self.env.step((y, x))
+            self._add_wall(x, y)
         best_path = self.env._calculateShortestPath()
 
         return best_path, best_length

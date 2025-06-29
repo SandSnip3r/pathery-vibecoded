@@ -86,6 +86,6 @@ class MemeticSolver(BaseSolver):
         self.env.reset()
         self.env.remainingWalls = self.env.wallsToPlace
         for x, y in final_walls:
-            self.env.step((y, x))
+            self._add_wall(x, y)
 
         return best_path, best_path_length

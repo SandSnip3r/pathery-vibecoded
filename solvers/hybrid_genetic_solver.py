@@ -18,9 +18,14 @@ def _calculate_fitness(
 ) -> Tuple[int, List[Tuple[int, int]]]:
     solver_env.reset()
     for x, y in individual:
-        solver_env.step((y, x))
+        # Because this function is run in a separate process, it doesn't have access
+        # to the solver's `self` instance. We create a temporary BaseSolver instance
+        # to gain access to the `_add_wall` method.
+        BaseSolver(solver_env)._add_wall(x, y)
 
     path = solver_env._calculateShortestPath()
+    if not path.any():
+        return -1, individual
     return len(path), individual
 
 
@@ -115,7 +120,7 @@ class HybridGeneticSolver(BaseSolver):
                             if best_individual:
                                 self.env.reset()
                                 for x, y in best_individual:
-                                    self.env.step((y, x))
+                                    self._add_wall(x, y)
                             best_path = self.env._calculateShortestPath()
                             return best_path, best_path_length
 
@@ -134,10 +139,20 @@ class HybridGeneticSolver(BaseSolver):
                 # Create new population
                 new_population = elites
                 for _ in range(self.population_size - self.elite_size):
-                    parent1, parent2 = random.choices(parents, k=2)
-                    child = self._crossover(parent1, parent2, self.env.wallsToPlace)
-                    self._mutate(child, current_mutation_rate)
-                    new_population.append(child)
+                    for i in range(10):  # Retry up to 10 times
+                        parent1, parent2 = random.choices(parents, k=2)
+                        child = self._crossover(parent1, parent2, self.env.wallsToPlace)
+                        self._mutate(child, current_mutation_rate)
+
+                        # Test if the child is valid
+                        fitness, _ = _calculate_fitness(child)
+                        if fitness != -1:
+                            new_population.append(child)
+                            break
+                    else:
+                        # If we failed to create a valid child after 10 attempts,
+                        # fall back to a known good individual from the elites.
+                        new_population.append(random.choice(elites))
 
                 population = new_population
 
@@ -145,11 +160,11 @@ class HybridGeneticSolver(BaseSolver):
         if best_individual:
             self.env.reset()
             for x, y in best_individual:
-                self.env.step((y, x))
+                self._add_wall(x, y)
 
         best_path = self.env._calculateShortestPath()
 
-        return best_path, best_path_length
+        return best_path, len(best_path)
 
     def _select_parents(
         self,
