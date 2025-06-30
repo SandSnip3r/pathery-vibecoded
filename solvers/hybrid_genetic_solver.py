@@ -8,31 +8,46 @@ from solvers.base_solver import BaseSolver
 import numpy as np
 
 
-def _init_worker(env: PatheryEnv) -> None:
+def _init_worker(env: PatheryEnv, perf_logger: Optional[logging.Logger] = None) -> None:
     global solver_env
+    global worker_perf_logger
     solver_env = env
+    worker_perf_logger = perf_logger
 
 
-def _calculate_fitness(
+def _calculate_fitness_worker(
     individual: List[Tuple[int, int]]
 ) -> Tuple[int, List[Tuple[int, int]]]:
-    solver_env.reset()
-    for x, y in individual:
-        # Because this function is run in a separate process, it doesn't have access
-        # to the solver's `self` instance. We create a temporary BaseSolver instance
-        # to gain access to the `_add_wall` method.
-        BaseSolver(solver_env)._add_wall(x, y)
-
-    path = solver_env._calculateShortestPath()
-    if not path.any():
-        return -1, individual
-    return len(path), individual
+    """Helper function to calculate fitness in a separate process."""
+    fitness, path = HybridGeneticSolver.calculate_fitness_static(individual, solver_env)
+    if worker_perf_logger:
+        worker_perf_logger.info(f"genetic_worker,{time.time()},,,{fitness},,,,,,")
+        worker_perf_logger.handlers[0].flush()
+    return fitness, path
 
 
 class HybridGeneticSolver(BaseSolver):
     """
     A solver that uses a hybrid genetic algorithm.
     """
+
+    @staticmethod
+    def calculate_fitness_static(
+        individual: List[Tuple[int, int]], env: PatheryEnv
+    ) -> Tuple[int, List[Tuple[int, int]]]:
+        """
+        Calculates the fitness of an individual.
+        This is a static method to allow it to be called by the multiprocessing pool.
+        """
+        env.reset()
+        for x, y in individual:
+            # Create a temporary BaseSolver to access _add_wall
+            BaseSolver(env)._add_wall(x, y)
+
+        path = env._calculateShortestPath()
+        if not path.any():
+            return -1, individual
+        return len(path), individual
 
     def __init__(
         self,
@@ -43,6 +58,7 @@ class HybridGeneticSolver(BaseSolver):
         elite_size: int = 5,
         best_known_solution: int = 0,
         time_limit: Optional[int] = None,
+        perf_logger: Optional[logging.Logger] = None,
         **kwargs,
     ) -> None:
         """
@@ -56,8 +72,14 @@ class HybridGeneticSolver(BaseSolver):
             elite_size (int): The number of top individuals to carry over to the next generation.
             best_known_solution (int): The best known solution length.
             time_limit (Optional[int]): The time limit in seconds for the solver.
+            perf_logger (Optional[logging.Logger]): A logger for performance metrics.
         """
-        super().__init__(env, best_known_solution, time_limit)
+        super().__init__(
+            env,
+            best_known_solution,
+            time_limit,
+            perf_logger,
+        )
         self.population_size = population_size
         self.num_generations = num_generations
         self.mutation_rate = mutation_rate
@@ -82,7 +104,9 @@ class HybridGeneticSolver(BaseSolver):
             wall_locations = np.where(self.env.grid == CellType.WALL.value)
             population[i] = list(zip(wall_locations[1], wall_locations[0]))
 
-        with Pool(initializer=_init_worker, initargs=(self.env,)) as pool:
+        with Pool(
+            initializer=_init_worker, initargs=(self.env, self.perf_logger)
+        ) as pool:
             for generation in range(self.num_generations):
                 if (
                     self.time_limit
@@ -103,7 +127,14 @@ class HybridGeneticSolver(BaseSolver):
                 logging.getLogger().handlers[0].flush()
 
                 # Asynchronously calculate fitness for the population
-                results = pool.map(_calculate_fitness, population)
+                results = pool.map(_calculate_fitness_worker, population)
+
+                scores = [r[0] for r in results]
+                if self.perf_logger:
+                    self.perf_logger.info(
+                        f"genetic,{time.time()},{generation},,{np.max(scores)},{best_path_length},{np.mean(scores)},{np.median(scores)},{np.min(scores)},{np.std(scores)}"
+                    )
+                    self.perf_logger.handlers[0].flush()
 
                 for score, individual in results:
                     if score > best_path_length:
@@ -139,20 +170,10 @@ class HybridGeneticSolver(BaseSolver):
                 # Create new population
                 new_population = elites
                 for _ in range(self.population_size - self.elite_size):
-                    for i in range(10):  # Retry up to 10 times
-                        parent1, parent2 = random.choices(parents, k=2)
-                        child = self._crossover(parent1, parent2, self.env.wallsToPlace)
-                        self._mutate(child, current_mutation_rate)
-
-                        # Test if the child is valid
-                        fitness, _ = _calculate_fitness(child)
-                        if fitness != -1:
-                            new_population.append(child)
-                            break
-                    else:
-                        # If we failed to create a valid child after 10 attempts,
-                        # fall back to a known good individual from the elites.
-                        new_population.append(random.choice(elites))
+                    parent1, parent2 = random.choices(parents, k=2)
+                    child = self._crossover(parent1, parent2, self.env.wallsToPlace)
+                    self._mutate(child, current_mutation_rate)
+                    new_population.append(child)
 
                 population = new_population
 
@@ -162,6 +183,7 @@ class HybridGeneticSolver(BaseSolver):
             for x, y in best_individual:
                 self._add_wall(x, y)
 
+        self.generations_run = generation + 1
         best_path = self.env._calculateShortestPath()
 
         return best_path, len(best_path)

@@ -32,7 +32,12 @@ class FocusedSearchSolver(BaseSolver):
             best_known_solution (int): The best known solution length.
             time_limit (Optional[int]): The time limit in seconds for the solver.
         """
-        super().__init__(env, best_known_solution, time_limit)
+        super().__init__(
+            env,
+            best_known_solution,
+            time_limit,
+            kwargs.get("perf_logger"),
+        )
         self.beam_width = beam_width
         self.search_depth = search_depth
 

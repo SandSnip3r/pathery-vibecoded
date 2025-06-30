@@ -61,6 +61,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--time_limit", type=int, help="Time limit in seconds for the solver."
     )
+    parser.add_argument(
+        "--perf_log_file",
+        type=str,
+        help="Path to a file to write structured performance logs (CSV format).",
+    )
     args = parser.parse_args()
 
     console = Console()
@@ -76,13 +81,29 @@ if __name__ == "__main__":
     ):
         config["solvers"][args.solver]["num_generations"] = args.num_generations
 
-    # Configure logging
+    # Configure general application logging
     log_file = os.path.join("logs", config["log_files"]["solver"])
     logging.basicConfig(
         filename=log_file,
         level=logging.INFO,
-        format="%(asctime)s - %(message)s",
+        format="%(asctime)s - %(levelname)s - %(message)s",
     )
+
+    # Configure dedicated performance logger if requested
+    perf_logger = None
+    if args.perf_log_file:
+        perf_logger = logging.getLogger("performance")
+        perf_logger.setLevel(logging.INFO)
+        # Prevent perf_logger from propagating to the root logger
+        perf_logger.propagate = False
+        # Overwrite the file if it exists
+        handler = logging.FileHandler(args.perf_log_file, mode="w")
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        perf_logger.addHandler(handler)
+        # Write the unified header
+        perf_logger.info(
+            "phase,timestamp,generation,step,score,best_so_far,mean,median,min,std_dev"
+        )
 
     # Load the puzzle
     env, puzzle_data = load_puzzle(args.puzzle)
@@ -100,6 +121,8 @@ if __name__ == "__main__":
     solver_config = config["solvers"].get(args.solver, {})
     if args.time_limit:
         solver_config["time_limit"] = args.time_limit
+    # Pass the performance logger to the solver
+    solver_config["perf_logger"] = perf_logger
     solver = solver_factory(args.solver, env, **solver_config)
 
     # Find the best path

@@ -1,4 +1,5 @@
 import time
+import logging
 from typing import Tuple, List, Optional, Any
 from pathery_env.envs.pathery import PatheryEnv
 from solvers.base_solver import BaseSolver
@@ -20,7 +21,7 @@ class MemeticSolver(BaseSolver):
         elite_size: int = 5,
         best_known_solution: int = 0,
         time_limit: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         Initializes the MemeticSolver.
@@ -34,7 +35,12 @@ class MemeticSolver(BaseSolver):
             best_known_solution (int): The best known solution length.
             time_limit (Optional[int]): The time limit in seconds for the solver.
         """
-        super().__init__(env, best_known_solution, time_limit)
+        super().__init__(
+            env,
+            best_known_solution,
+            time_limit,
+            kwargs.get("perf_logger"),
+        )
         self.population_size = population_size
         self.num_generations = num_generations
         self.mutation_rate = mutation_rate
@@ -53,22 +59,36 @@ class MemeticSolver(BaseSolver):
         genetic_time_limit = self.time_limit * 0.8 if self.time_limit else None
 
         # First, run the genetic algorithm to find a good starting solution
+        if self.perf_logger:
+            self.perf_logger.info(f"genetic,{time.time()},start,,,,,,,")
+            self.perf_logger.handlers[0].flush()
         genetic_solver = HybridGeneticSolver(
             self.env,
-            self.population_size,
-            self.num_generations,
-            self.mutation_rate,
-            self.elite_size,
-            self.best_known_solution,
+            population_size=self.population_size,
+            num_generations=self.num_generations,
+            mutation_rate=self.mutation_rate,
+            elite_size=self.elite_size,
+            best_known_solution=self.best_known_solution,
             time_limit=genetic_time_limit,
+            perf_logger=self.perf_logger,
         )
         best_path, _ = genetic_solver.solve()
+
+        if genetic_solver.generations_run == 0:
+            logging.warning(
+                "The genetic algorithm phase of the memetic solver did not run for any generations. "
+                "This is likely due to a short time limit. The initial population generation is time-consuming. "
+                "Consider increasing the time limit to allow the genetic algorithm to run."
+            )
 
         # If the genetic algorithm didn't find a solution, start with a random one
         if not best_path.any():
             self.env.reset()
             self._randomly_place_walls(self.env.wallsToPlace)
 
+        if self.perf_logger:
+            self.perf_logger.info(f"hill_climbing,{time.time()},start,,,,,,,")
+            self.perf_logger.handlers[0].flush()
         hill_climbing_time_limit = (
             self.time_limit - (time.time() - self.start_time)
             if self.time_limit
@@ -78,14 +98,8 @@ class MemeticSolver(BaseSolver):
             self.env,
             num_restarts=self.hill_climbing_restarts,
             time_limit=hill_climbing_time_limit,
+            perf_logger=self.perf_logger,
         )
-        best_path, best_path_length, final_walls = (
-            hill_climbing_solver._hill_climb_optimizer(self.env.wallsToPlace)
-        )
-
-        self.env.reset()
-        self.env.remainingWalls = self.env.wallsToPlace
-        for x, y in final_walls:
-            self._add_wall(x, y)
+        best_path, best_path_length = hill_climbing_solver.solve()
 
         return best_path, best_path_length

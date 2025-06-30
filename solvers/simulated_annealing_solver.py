@@ -19,6 +19,7 @@ class SimulatedAnnealingSolver(BaseSolver):
         cooling_rate: float = 0.003,
         best_known_solution: int = 0,
         time_limit: Optional[int] = None,
+        **kwargs,
     ) -> None:
         """
         Initializes the SimulatedAnnealingSolver.
@@ -28,7 +29,12 @@ class SimulatedAnnealingSolver(BaseSolver):
             initial_temp (float): The initial temperature.
             cooling_rate (float): The rate at which the temperature cools.
         """
-        super().__init__(env, best_known_solution, time_limit)
+        super().__init__(
+            env,
+            best_known_solution,
+            time_limit,
+            kwargs.get("perf_logger"),
+        )
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
 

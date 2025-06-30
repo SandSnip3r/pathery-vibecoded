@@ -1,5 +1,6 @@
 import time
 import random
+import logging
 from typing import List, Tuple, Optional
 from pathery_env.envs.pathery import PatheryEnv, CellType
 from solvers.base_solver import BaseSolver
@@ -17,6 +18,8 @@ class HillClimbingSolver(BaseSolver):
         num_restarts: int = 10,
         best_known_solution: int = 0,
         time_limit: Optional[int] = None,
+        perf_logger: Optional[logging.Logger] = None,
+        **kwargs,
     ) -> None:
         """
         Initializes the HillClimbingSolver.
@@ -25,8 +28,14 @@ class HillClimbingSolver(BaseSolver):
             env (PatheryEnv): An instance of the PatheryEnv.
             num_restarts (int): The number of times to restart the algorithm.
             time_limit (Optional[int]): The time limit in seconds for the solver.
+            perf_logger (Optional[logging.Logger]): A logger for performance metrics.
         """
-        super().__init__(env, best_known_solution, time_limit)
+        super().__init__(
+            env,
+            best_known_solution,
+            time_limit,
+            perf_logger,
+        )
         self.num_restarts = num_restarts
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], int]:
@@ -41,6 +50,9 @@ class HillClimbingSolver(BaseSolver):
         best_path_length = 0
         best_grid = None
 
+        if self.perf_logger:
+            self.perf_logger.info("timestamp,restart,step,score")
+
         for i in range(self.num_restarts):
             if self.time_limit and (time.time() - self.start_time) > self.time_limit:
                 print(f"Time limit reached. Exiting after {i} restarts.")
@@ -49,7 +61,7 @@ class HillClimbingSolver(BaseSolver):
             self._randomly_place_walls(self.env.wallsToPlace)
 
             _, path_length, final_walls = self._hill_climb_optimizer(
-                self.env.wallsToPlace
+                self.env.wallsToPlace, restart_num=i
             )
 
             if path_length > best_path_length:
@@ -67,7 +79,11 @@ class HillClimbingSolver(BaseSolver):
         return best_path, best_path_length
 
     def _hill_climb_optimizer(
-        self, num_walls: int, max_steps: int = 5, num_samples: int = 5
+        self,
+        num_walls: int,
+        max_steps: int = 5,
+        num_samples: int = 5,
+        restart_num: int = 0,
     ) -> Tuple[Optional[List[Tuple[int, int]]], int, List[Tuple[int, int]]]:
         """
         Optimizes a single wall configuration by hill climbing.
@@ -77,7 +93,7 @@ class HillClimbingSolver(BaseSolver):
         if not current_path.any():
             return None, 0, []
 
-        for _ in range(max_steps):
+        for step in range(max_steps):
             best_neighbor_grid = self.env.grid.copy()
             best_neighbor_path_length = current_path_length
 
@@ -110,6 +126,11 @@ class HillClimbingSolver(BaseSolver):
             if best_neighbor_path_length > current_path_length:
                 self.env.grid = best_neighbor_grid
                 current_path_length = best_neighbor_path_length
+                if self.perf_logger:
+                    self.perf_logger.info(
+                        f"hill_climb,{time.time()},{restart_num},{step},{current_path_length},,,,"
+                    )
+                    self.perf_logger.handlers[0].flush()
             else:
                 break
 

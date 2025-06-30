@@ -1,4 +1,5 @@
 import random
+import logging
 import numpy as np
 from typing import Optional
 from pathery_env.envs.pathery import PatheryEnv, CellType
@@ -14,6 +15,7 @@ class BaseSolver:
         env: PatheryEnv,
         best_known_solution: int = 0,
         time_limit: Optional[int] = None,
+        perf_logger: Optional[logging.Logger] = None,
     ) -> None:
         """
         Initializes the BaseSolver.
@@ -22,10 +24,12 @@ class BaseSolver:
             env (PatheryEnv): An instance of the PatheryEnv.
             best_known_solution (int): The best known solution length.
             time_limit (Optional[int]): The time limit in seconds for the solver.
+            perf_logger (Optional[logging.Logger]): A logger for performance metrics.
         """
         self.env = env
         self.best_known_solution = best_known_solution
         self.time_limit = time_limit
+        self.perf_logger = perf_logger
         self.start_time = None
 
     def _add_wall(self, x: int, y: int) -> None:
