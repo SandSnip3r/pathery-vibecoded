@@ -99,4 +99,5 @@ if __name__ == "__main__":
 
     # Save the trained model
     mngr.save(args.epochs, args=ocp.args.StandardSave(agent.state))
+    mngr.wait_until_finished()
     print(f"Model saved to {args.model_path}")
