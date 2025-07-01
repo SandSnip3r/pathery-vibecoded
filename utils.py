@@ -1,7 +1,9 @@
 import json
 import os
 import sys
+
 from pathery_env.envs.pathery import PatheryEnv
+
 from tests.map_builder import MapBuilder
 
 

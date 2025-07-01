@@ -1,9 +1,11 @@
 from .base_solver import BaseSolver
+from .focused_search_solver import FocusedSearchSolver
+from .genetic_solver import GeneticSolver
 from .hill_climbing_solver import HillClimbingSolver
-from .simulated_annealing_solver import SimulatedAnnealingSolver
+from .hybrid_ga_solver import HybridGASolver
 from .hybrid_genetic_solver import HybridGeneticSolver
 from .memetic_solver import MemeticSolver
-from .focused_search_solver import FocusedSearchSolver
+from .simulated_annealing_solver import SimulatedAnnealingSolver
 
 __all__ = [
     "BaseSolver",
@@ -12,4 +14,6 @@ __all__ = [
     "HybridGeneticSolver",
     "MemeticSolver",
     "FocusedSearchSolver",
+    "GeneticSolver",
+    "HybridGASolver",
 ]

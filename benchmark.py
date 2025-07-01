@@ -1,10 +1,11 @@
-from typing import List
-import time
-import logging
 import argparse
-import statistics
+import logging
 import os
-from pathery_solver import solver_factory, load_config
+import statistics
+import time
+from typing import List
+
+from pathery_solver import load_config, solver_factory
 from utils import load_puzzle
 
 

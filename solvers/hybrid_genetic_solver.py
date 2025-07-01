@@ -1,11 +1,13 @@
-import time
-import random
 import logging
+import random
+import time
 from multiprocessing import Pool
-from typing import List, Tuple, Optional
-from pathery_env.envs.pathery import PatheryEnv, CellType
-from solvers.base_solver import BaseSolver
+from typing import List, Optional, Tuple
+
 import numpy as np
+from pathery_env.envs.pathery import CellType, PatheryEnv
+
+from solvers.base_solver import BaseSolver
 
 
 def _init_worker(env: PatheryEnv, perf_logger: Optional[logging.Logger] = None) -> None:

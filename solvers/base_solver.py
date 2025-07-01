@@ -1,8 +1,9 @@
-import random
 import logging
-import numpy as np
+import random
 from typing import Optional
-from pathery_env.envs.pathery import PatheryEnv, CellType
+
+import numpy as np
+from pathery_env.envs.pathery import CellType, PatheryEnv
 
 
 class BaseSolver:

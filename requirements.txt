@@ -1,4 +1,4 @@
-pybind11
-gymnasium
-numpy
-rich
+
+jax[cuda]
+orbax-checkpoint
+tensorboardX

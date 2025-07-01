@@ -1,11 +1,13 @@
-import time
-import logging
-from typing import Tuple, List, Optional, Any
-from pathery_env.envs.pathery import PatheryEnv, CellType
-from solvers.base_solver import BaseSolver
-import random
 import heapq
+import logging
+import random
+import time
+from typing import Any, List, Optional, Tuple
+
 import numpy as np
+from pathery_env.envs.pathery import CellType, PatheryEnv
+
+from solvers.base_solver import BaseSolver
 
 
 class FocusedSearchSolver(BaseSolver):

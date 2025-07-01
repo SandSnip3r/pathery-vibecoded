@@ -1,10 +1,12 @@
-import random
 import math
+import random
 import time
-from typing import Tuple, List, Optional
-from pathery_env.envs.pathery import PatheryEnv, CellType
-from solvers.base_solver import BaseSolver
+from typing import List, Optional, Tuple
+
 import numpy as np
+from pathery_env.envs.pathery import CellType, PatheryEnv
+
+from solvers.base_solver import BaseSolver
 
 
 class SimulatedAnnealingSolver(BaseSolver):

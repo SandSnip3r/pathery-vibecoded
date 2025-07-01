@@ -1,10 +1,12 @@
-import time
 import logging
-from typing import Tuple, List, Optional, Any
+import time
+from typing import Any, List, Optional, Tuple
+
 from pathery_env.envs.pathery import PatheryEnv
+
 from solvers.base_solver import BaseSolver
-from solvers.hybrid_genetic_solver import HybridGeneticSolver
 from solvers.hill_climbing_solver import HillClimbingSolver
+from solvers.hybrid_genetic_solver import HybridGeneticSolver
 
 
 class MemeticSolver(BaseSolver):

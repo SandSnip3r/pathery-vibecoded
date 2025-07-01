@@ -1,10 +1,12 @@
-import time
-import random
 import logging
-from typing import List, Tuple, Optional
-from pathery_env.envs.pathery import PatheryEnv, CellType
-from solvers.base_solver import BaseSolver
+import random
+import time
+from typing import List, Optional, Tuple
+
 import numpy as np
+from pathery_env.envs.pathery import CellType, PatheryEnv
+
+from solvers.base_solver import BaseSolver
 
 
 class HillClimbingSolver(BaseSolver):

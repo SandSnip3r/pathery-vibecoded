@@ -1,21 +1,25 @@
+import argparse
 import json
 import logging
-import argparse
 import os
-from typing import Dict, Any
+from typing import Any, Dict
+
+from pathery_env.envs.pathery import PatheryEnv
 from rich.console import Console
 from rich.panel import Panel
-from utils import load_puzzle
 from rich.progress import Progress
-from pathery_env.envs.pathery import PatheryEnv
-from solvers.base_solver import BaseSolver
+
 from solvers import (
+    FocusedSearchSolver,
+    GeneticSolver,
     HillClimbingSolver,
-    SimulatedAnnealingSolver,
+    HybridGASolver,
     HybridGeneticSolver,
     MemeticSolver,
-    FocusedSearchSolver,
+    SimulatedAnnealingSolver,
 )
+from solvers.base_solver import BaseSolver
+from utils import load_puzzle
 
 
 def load_config(path: str = "config.json") -> Dict[str, Any]:
@@ -33,6 +37,8 @@ def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
         "hybrid_genetic": HybridGeneticSolver,
         "memetic": MemeticSolver,
         "focused_search": FocusedSearchSolver,
+        "genetic": GeneticSolver,
+        "hybrid_ga": HybridGASolver,
     }.get(solver_name)
 
     if not solver_class:
@@ -51,7 +57,7 @@ if __name__ == "__main__":
         "--solver",
         type=str,
         default="memetic",
-        help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search).",
+        help="The solver to use (hill_climbing, simulated_annealing, hybrid_genetic, memetic, focused_search, genetic).",
     )
     parser.add_argument(
         "--num_generations",
@@ -65,6 +71,11 @@ if __name__ == "__main__":
         "--perf_log_file",
         type=str,
         help="Path to a file to write structured performance logs (CSV format).",
+    )
+    parser.add_argument(
+        "--data_log_dir",
+        type=str,
+        help="Path to a directory to write mutation data logs (JSONL format).",
     )
     args = parser.parse_args()
 
@@ -121,6 +132,10 @@ if __name__ == "__main__":
     solver_config = config["solvers"].get(args.solver, {})
     if args.time_limit:
         solver_config["time_limit"] = args.time_limit
+    if args.num_generations:
+        solver_config["generations"] = args.num_generations
+    if args.data_log_dir:
+        solver_config["data_log_dir"] = args.data_log_dir
     # Pass the performance logger to the solver
     solver_config["perf_logger"] = perf_logger
     solver = solver_factory(args.solver, env, **solver_config)

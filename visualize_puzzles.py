@@ -1,5 +1,6 @@
-import json
 import argparse
+import json
+
 from pathery_env_adapter import PatheryEnvAdapter as PatheryEmulator
 
 
