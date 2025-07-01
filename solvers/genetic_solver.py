@@ -118,7 +118,10 @@ class GeneticSolver(BaseSolver):
         self.population = []
         for _ in range(self.population_size):
             self.env.reset()
-            self._randomly_place_walls(self.env.wallsToPlace)
+            open_cells = np.where(self.env.grid == CellType.OPEN.value)
+            num_open_cells = len(open_cells[0])
+            num_walls = random.randint(1, num_open_cells)
+            self._randomly_place_walls(num_walls)
             self.population.append(self.env.grid.copy())
 
     def _calculate_fitness(self, chromosome: np.ndarray) -> float:

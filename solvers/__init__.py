@@ -1,4 +1,5 @@
 from .base_solver import BaseSolver
+from .dqn_genetic_solver import DqnGeneticSolver
 from .focused_search_solver import FocusedSearchSolver
 from .genetic_solver import GeneticSolver
 from .hill_climbing_solver import HillClimbingSolver
@@ -16,4 +17,5 @@ __all__ = [
     "FocusedSearchSolver",
     "GeneticSolver",
     "HybridGASolver",
+    "DqnGeneticSolver",
 ]

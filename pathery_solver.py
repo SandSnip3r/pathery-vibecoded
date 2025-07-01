@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.progress import Progress
 
 from solvers import (
+    DqnGeneticSolver,
     FocusedSearchSolver,
     GeneticSolver,
     HillClimbingSolver,
@@ -39,6 +40,7 @@ def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
         "focused_search": FocusedSearchSolver,
         "genetic": GeneticSolver,
         "hybrid_ga": HybridGASolver,
+        "dqn_genetic": DqnGeneticSolver,
     }.get(solver_name)
 
     if not solver_class:

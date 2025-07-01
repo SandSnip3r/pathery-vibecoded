@@ -156,6 +156,12 @@ class DQNAgent:
             # One-hot encode the board state and add a batch dimension
             obs = self.env._get_obs()["board"]
             obs = jnp.transpose(obs, (1, 2, 0))
+
+            # Pad the observation if necessary
+            if obs.shape[-1] < 34:
+                padding = jnp.zeros((obs.shape[0], obs.shape[1], 34 - obs.shape[-1]))
+                obs = jnp.concatenate([obs, padding], axis=-1)
+
             obs = jnp.expand_dims(obs, axis=0)
 
             removal_scores, placement_scores, action_type_scores = self.state.apply_fn(

@@ -9,7 +9,9 @@ from pathery_solver import load_config, solver_factory
 from utils import load_puzzle
 
 
-def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> None:
+def run_benchmarks(
+    puzzles: List[str], solvers: List[str], num_runs: int, num_generations: int
+) -> None:
     """
     Runs benchmarks for given puzzles and solvers and generates a performance report.
     """
@@ -42,6 +44,8 @@ def run_benchmarks(puzzles: List[str], solvers: List[str], num_runs: int) -> Non
                 print(f"  Run {i+1}/{num_runs}...")
                 game, puzzle_data = load_puzzle(puzzle_name)
                 solver_config = config["solvers"].get(solver_name, {})
+                if num_generations:
+                    solver_config["generations"] = num_generations
                 solver = solver_factory(solver_name, game, **solver_config)
 
                 start_time = time.time()
@@ -87,5 +91,11 @@ if __name__ == "__main__":
         default=5,
         help="The number of times to run the benchmark for each solver.",
     )
+    parser.add_argument(
+        "--num_generations",
+        type=int,
+        default=None,
+        help="The number of generations to run the genetic algorithms for.",
+    )
     args = parser.parse_args()
-    run_benchmarks(args.puzzles, args.solvers, args.num_runs)
+    run_benchmarks(args.puzzles, args.solvers, args.num_runs, args.num_generations)
