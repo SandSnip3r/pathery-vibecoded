@@ -1,12 +1,8 @@
-import os
-import sys
 import unittest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from pathery_env.envs.pathery import PatheryEnv
-
-from pathery_solver import solver_factory
-from tests.map_builder import MapBuilder
+from src.pathery_env.envs.pathery import PatheryEnv
+from src.pathery.main import solver_factory
+from src.pathery.map_builder import MapBuilder
 
 
 class BaseSolverTest(unittest.TestCase):

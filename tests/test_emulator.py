@@ -1,10 +1,6 @@
-import os
-import sys
 import unittest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from pathery_env.envs.pathery import PatheryEnv
-
+from src.pathery_env.envs.pathery import PatheryEnv
 from tests.map_builder import MapBuilder
 
 

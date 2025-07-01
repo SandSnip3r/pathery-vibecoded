@@ -1,103 +1,95 @@
 # Pathery Puzzle Solver
 
-This project is a high-performance, Python-based command-line application designed to programmatically solve puzzles from the game Pathery. It uses a variety of sophisticated solver algorithms to find optimal or near-optimal solutions for a given puzzle layout.
+This project provides a high-performance, Python-based platform for developing and comparing sophisticated solver algorithms for the game Pathery. It includes a flexible and extensible architecture that allows for the easy implementation and testing of new solvers.
 
-## Key Features
+## Installation
 
-*   **Multiple Solver Algorithms:** The project includes a flexible architecture that allows for the implementation of multiple solver algorithms, including:
-    *   **Hill Climbing:** A simple and fast optimization algorithm.
-    *   **Simulated Annealing:** A probabilistic technique for approximating the global optimum.
-    *   **Hybrid Genetic Algorithm:** A sophisticated algorithm that evolves populations of wall configurations to maximize path length.
-    *   **Memetic Algorithm:** A hybrid of a genetic algorithm and a local search algorithm (Hill Climbing).
-    *   **Focused Search:** A focused beam search algorithm.
-*   **Parallel Fitness Calculation:** The fitness of each individual in the genetic algorithm's population is calculated in parallel, significantly reducing the time required to evolve solutions.
-*   **Extensible Solver Architecture:** The project includes a flexible architecture that allows for the easy addition of new solver algorithms.
-*   **Comprehensive Tooling:** The project includes a benchmark tool for performance measurement, a suite of unit tests for ensuring correctness, and detailed logging for debugging and analysis.
+To get started, you'll need Python 3.8+ and a C++ compiler.
 
-## Project Structure
-
-*   **`puzzles/`**: This directory contains puzzle definitions in a simple JSON format. Each file defines a puzzle's dimensions, wall count, start/finish points, rock locations, and the best-known solution length (if available). A value of `0` for `best_solution` indicates that the optimal solution is not known.
-*   **`solvers/`**: This directory contains the different solver implementations.
-*   **`experiments/`**: This directory contains markdown files that document experiments with different solver algorithms and parameters. It also includes a `template.md` for creating new experiment files.
-*   **`pathery_solver.py`**: The main entry point for the application. It loads a puzzle and a solver and runs the solver.
-*   **`PatheryEnv/`**: This directory contains the `PatheryEnv` gymnasium environment, which simulates the Pathery game board.
-*   **`pathery_rules.md`**: A markdown file containing the rules of the Pathery game.
-*   **`setup.py`**: The build script responsible for installing the project and its dependencies.
-*   **`tests/`**: This directory contains the unit tests for the project. `test_emulator.py` tests the game emulator, and `test_solvers.py` tests the solver algorithms.
-*   **`benchmark.py`**: A script for measuring the performance of the solver.
-*   **`config.json`**: A configuration file for the project, including paths to log files and solver parameters.
-
-## Prerequisites
-
-*   Python 3
-*   A C++ compiler (e.g., GCC, Clang, MSVC) for the PatheryEnv dependency
-
-## Setup and Installation
-
-1.  **Create a virtual environment:**
+1.  **Create and activate a virtual environment:**
     ```bash
     python3 -m venv venv
-    ```
-2.  **Activate the virtual environment:**
-    ```bash
     source venv/bin/activate
     ```
-3.  **Compile the C++ Pathfinding Library for PatheryEnv:**
+
+2.  **Compile the C++ Pathfinding Library:**
+    The core environment uses a C++ library for high-speed pathfinding calculations.
     ```bash
-    make -C PatheryEnv/pathery_env/cpp_lib/
+    make -C src/pathery_env/cpp_lib/
     ```
-4.  **Install Dependencies and the Project:**
+
+3.  **Install Dependencies and the Project:**
+    Install the required Python packages and the project itself in "editable" mode. This allows you to edit the source code and have the changes immediately reflected without reinstalling.
     ```bash
     pip install -r requirements.txt
     pip install -e .
     ```
 
-## Usage
+## User Tools
 
-To solve a puzzle, run the `pathery_solver.py` script with the name of the puzzle (e.g., `puzzle_1`) or the path to a puzzle file.
+These are the main executables you'll use for solving and visualizing puzzles.
 
+### Main Solver
+
+The primary tool for solving puzzles. It can be run with various solvers and configurations.
+
+**Usage:**
 ```bash
-# Run with a puzzle name
-python pathery_solver.py puzzle_1
-
-# Run with a file path
-python pathery_solver.py puzzles/puzzle_2.json
+python src/pathery/main.py <puzzle_path> --solver <solver_name>
 ```
 
-### Command-Line Options
-
-*   `--solver`: Specify the solver to use. The following solvers are available:
-    *   `hill_climbing`
-    *   `simulated_annealing`
-    *   `hybrid_genetic`
-    *   `memetic` (default)
-    *   `focused_search`
-*   `--num_generations`: Override the number of generations for genetic algorithms.
-
-Example:
+**Examples:**
 ```bash
-python pathery_solver.py puzzle_3 --solver hybrid_genetic --num_generations 500
+# Solve puzzle_1.json with the default memetic solver
+python src/pathery/main.py data/puzzles/puzzle_1.json
+
+# Solve puzzle_3.json with the genetic solver and a 60-second time limit
+python src/pathery/main.py data/puzzles/ucu/puzzle_3.json --solver genetic --time_limit 60
+```
+*For a full list of options, run with `--help`.*
+
+### Puzzle Visualizer
+
+A simple tool to render a puzzle file in the console.
+
+**Usage:**
+```bash
+python scripts/visualize_puzzles.py <puzzle_path>
 ```
 
-### Running Tests
+## Developer & Experimentation Tools
 
-To run the unit tests, execute the test scripts in the `tests` directory.
+These scripts are used for collecting data, training models, and running benchmarks.
 
-```bash
-python -m unittest discover tests
-```
+*   **`scripts/run_data_collection.py`**: Runs the genetic solver on a batch of puzzles to generate mutation data for training RL models.
+*   **`scripts/combine_logs.py`**: Merges the parallel log files generated by the data collection script into a single file.
+*   **`scripts/train_dqn.py`**: Trains the DQN (Deep Q-Network) agent using the data generated by the collection scripts.
+*   **`scripts/benchmark.py`**: A script for measuring and comparing the performance of different solvers on a set of puzzles.
 
-### Running Benchmarks
+## Implemented Solvers
 
-To measure the performance of the solver, run the `benchmark.py` script.
+The project includes a variety of solver algorithms:
 
-```bash
-python benchmark.py
-```
-The script will print the final path length and execution time to the console, and log the result to `benchmarks/solver_performance.md`.
+*   **`hill_climbing`**: A simple and fast local search algorithm that iteratively moves to better neighboring solutions.
+*   **`simulated_annealing`**: A probabilistic algorithm that can escape local optima by sometimes accepting worse solutions, with the probability decreasing over time.
+*   **`genetic`**: A standard genetic algorithm that evolves a population of solutions over generations using selection, crossover, and mutation.
+*   **`hybrid_genetic`**: A more advanced genetic algorithm that uses a multiprocessing pool to calculate fitness in parallel for improved performance.
+*   **`memetic`**: A hybrid algorithm that combines the global search capabilities of a genetic algorithm with the local refinement of a hill-climbing search.
+*   **`dqn_genetic`**: An experimental solver that uses a pre-trained Deep Q-Network to guide the mutation process in a genetic algorithm.
+*   **`focused_search`**: A beam search algorithm that explores a limited number of the most promising solutions at each step.
 
-## Logging
+## Project Structure
 
-The application generates two log files in the `logs/` directory:
-*   `solver.log`: Logs the progress of the genetic algorithm, including the best score at each generation.
-*   `benchmark_results.log`: Logs the results of the benchmark runs.
+The project is organized using a standard `src` layout to separate the core library code from scripts and tests.
+
+*   **`src/pathery/`**: The main solver library, containing the core logic, solver implementations, and utilities.
+*   **`src/pathery_env/`**: The self-contained `PatheryEnv` gymnasium environment.
+*   **`data/puzzles/`**: Contains all puzzle definition files in JSON format.
+*   **`scripts/`**: Contains all runnable scripts for users and developers.
+*   **`tests/`**: Contains all unit and integration tests.
+*   **`output/`**: The default directory for all generated files, such as logs and model checkpoints.
+*   **`docs/`**: Project documentation and experiment notes.
+
+## Bug Reports
+
+Known bugs and issues are tracked in `bugs.md`. If you encounter a new issue, please consider adding it to this file.

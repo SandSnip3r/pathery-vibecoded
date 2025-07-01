@@ -2,7 +2,7 @@
 
 This document records the performance of the different solvers on all puzzles. The results are based on 5 runs for each solver on each puzzle.
 
-## puzzles/ucu/puzzle_7.json
+## data/puzzles/ucu/puzzle_7.json
 
 | Solver | Min Path | Max Path | Mean Path | Mean Duration (s) |
 |---|---|---|---|---|

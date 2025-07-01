@@ -139,12 +139,7 @@ cython_debug/
 .ruff_cache/
 
 # Orbax Checkpoints
-dqn_checkpoint/
-
-# Logs
-logs/
-mutation_logs/
-runs/
+output/
 
 # Datasets
 combined_mutations.jsonl
