@@ -6,6 +6,7 @@ from typing import List, Tuple
 import numpy as np
 import ctypes
 import os
+import copy
 from collections import deque
 
 
@@ -216,6 +217,19 @@ class PatheryEnv(gym.Env):
 
     def close(self):
         pass
+
+    def copy(self):
+        new_env = copy.copy(self)
+        new_env.grid = self.grid.copy()
+        new_env.startPositions = self.startPositions.copy()
+        new_env.goalPositions = self.goalPositions.copy()
+        new_env.rocks = self.rocks.copy()
+        new_env.ice = self.ice.copy()
+        new_env.checkpoints = self.checkpoints.copy()
+        new_env.teleporters = copy.deepcopy(self.teleporters)
+        new_env.currentPath = self.currentPath.copy()
+        new_env.checkpointIndices = self.checkpointIndices.copy()
+        return new_env
 
     def getSubmissionString(self):
         ans = ""

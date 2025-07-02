@@ -1,9 +1,9 @@
 import logging
 import os
 from typing import Optional
-from pathery_env.envs.pathery import PatheryEnv, CellType
+from pathery_env.envs.pathery import PatheryEnv
+from pathery.solvers.base_solver import BaseSolver
 from pathery.solvers.genetic_solver import GeneticSolver
-import numpy as np
 import orbax.checkpoint as ocp
 from pathery.rl.dqn_agent import DQNAgent
 
@@ -54,23 +54,23 @@ class DqnGeneticSolver(GeneticSolver):
                 latest_step, args=ocp.args.StandardRestore(self.agent.state)
             )
 
-    def _mutate(self, chromosome: np.ndarray) -> np.ndarray:
+    def _mutate(self, env: PatheryEnv) -> PatheryEnv:
         """
         Performs a mutation on a chromosome using the DQN model.
         """
-        mutated_chromosome = chromosome.copy()
-        action = self.agent.choose_action(mutated_chromosome, epsilon=0.0)
+        mutated_env = env.copy()
+        action = self.agent.choose_action(mutated_env.grid, epsilon=0.0)
 
         if action["type"] == "MOVE":
             from_pos = action["from"]
             to_pos = action["to"]
-            mutated_chromosome[from_pos[1], from_pos[0]] = CellType.OPEN.value
-            mutated_chromosome[to_pos[1], to_pos[0]] = CellType.WALL.value
+            BaseSolver._remove_wall(mutated_env, from_pos[0], from_pos[1])
+            BaseSolver._add_wall(mutated_env, to_pos[0], to_pos[1])
         elif action["type"] == "ADD":
             to_pos = action["to"]
-            mutated_chromosome[to_pos[1], to_pos[0]] = CellType.WALL.value
+            BaseSolver._add_wall(mutated_env, to_pos[0], to_pos[1])
         elif action["type"] == "REMOVE":
             from_pos = action["from"]
-            mutated_chromosome[from_pos[1], from_pos[0]] = CellType.OPEN.value
+            BaseSolver._remove_wall(mutated_env, from_pos[0], from_pos[1])
 
-        return mutated_chromosome
+        return mutated_env

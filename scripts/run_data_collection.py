@@ -1,37 +1,47 @@
 import argparse
+import os
+import random
 import subprocess
+import time
 from typing import List
 
 
-def run_in_batches(
-    puzzles: List[str], batch_size: int, num_generations: int, data_log_dir: str
-):
-    """
-    Runs the pathery solver for a list of puzzles in batches.
-    """
-    puzzle_batches = [
-        puzzles[i : i + batch_size] for i in range(0, len(puzzles), batch_size)
+def get_puzzle_files(puzzle_dir: str) -> List[str]:
+    """Gets all puzzle files from a directory."""
+    return [
+        os.path.join(puzzle_dir, f)
+        for f in os.listdir(puzzle_dir)
+        if f.endswith(".json")
     ]
 
-    for i, batch in enumerate(puzzle_batches):
-        print(f"Running batch {i + 1}/{len(puzzle_batches)}...")
-        processes = []
-        for puzzle_name in batch:
-            command = [
-                "python",
-                "src/pathery/main.py",
-                puzzle_name,
-                "--solver",
-                "genetic",
-                "--num_generations",
-                str(num_generations),
-                "--data_log_dir",
-                data_log_dir,
-            ]
-            processes.append(subprocess.Popen(command))
 
-        for p in processes:
-            p.wait()
+def run_in_parallel(
+    puzzles: List[str],
+    min_generations: int,
+    max_generations: int,
+    data_log_dir: str,
+):
+    """
+    Runs the pathery solver for a list of puzzles in parallel with random generations.
+    """
+    processes = []
+    for puzzle_name in puzzles:
+        num_generations = random.randint(min_generations, max_generations)
+        command = [
+            "python",
+            "src/pathery/main.py",
+            puzzle_name,
+            "--solver",
+            "genetic",
+            "--num_generations",
+            str(num_generations),
+            "--data_log_dir",
+            data_log_dir,
+        ]
+        processes.append(subprocess.Popen(command))
+
+    for p in processes:
+        p.wait()
 
 
 if __name__ == "__main__":
@@ -39,31 +49,55 @@ if __name__ == "__main__":
         description="Run data collection for the Pathery solver."
     )
     parser.add_argument(
-        "--puzzles",
-        nargs="+",
-        required=True,
-        help="The names of the puzzles to solve.",
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=10,
-        help="The number of puzzles to run in each batch.",
-    )
-    parser.add_argument(
-        "--num_generations",
-        type=int,
-        default=1000,
-        help="Number of generations for the genetic algorithm.",
+        "--puzzle_dir",
+        type=str,
+        default="data/puzzles/ucu",
+        help="Directory containing the puzzles.",
     )
     parser.add_argument(
         "--data_log_dir",
         type=str,
-        default="output/logs",
+        default="output/ga_transitions",
         help="Directory to save mutation data logs.",
+    )
+    parser.add_argument(
+        "--duration",
+        type=float,
+        default=1.0,
+        help="Duration to run the data collection in hours.",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=12,
+        help="The number of puzzles to run in each batch.",
+    )
+    parser.add_argument(
+        "--min_generations",
+        type=int,
+        default=100,
+        help="Minimum number of generations for the genetic algorithm.",
+    )
+    parser.add_argument(
+        "--max_generations",
+        type=int,
+        default=1000,
+        help="Maximum number of generations for the genetic algorithm.",
     )
     args = parser.parse_args()
 
-    run_in_batches(
-        args.puzzles, args.batch_size, args.num_generations, args.data_log_dir
-    )
+    puzzle_files = get_puzzle_files(args.puzzle_dir)
+    end_time = time.time() + args.duration * 3600
+
+    while time.time() < end_time:
+        print("Starting a new batch of puzzles...")
+        sampled_puzzles = random.sample(puzzle_files, args.batch_size)
+        run_in_parallel(
+            sampled_puzzles,
+            args.min_generations,
+            args.max_generations,
+            args.data_log_dir,
+        )
+        print("Batch finished.")
+
+    print("Data collection finished.")

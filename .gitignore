@@ -146,3 +146,6 @@ combined_mutations.jsonl
 
 # Gemini files
 .gemini/
+
+# Runs
+runs/

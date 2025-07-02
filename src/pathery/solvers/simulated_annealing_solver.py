@@ -82,8 +82,8 @@ class SimulatedAnnealingSolver(BaseSolver):
 
             new_x, new_y = random.choice(empty_cells)
 
-            self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.OPEN.value
-            self.env.grid[new_y][new_x] = CellType.WALL.value
+            BaseSolver._remove_wall(self.env, wall_to_move[0], wall_to_move[1])
+            BaseSolver._add_wall(self.env, new_x, new_y)
 
             new_path = self.env._calculateShortestPath()
             new_path_length = len(new_path)
@@ -105,14 +105,12 @@ class SimulatedAnnealingSolver(BaseSolver):
                         current_path_length = new_path_length
                     else:
                         # Revert the change
-                        self.env.grid[new_y][new_x] = CellType.OPEN.value
-                        self.env.grid[wall_to_move[1]][
-                            wall_to_move[0]
-                        ] = CellType.WALL.value
+                        BaseSolver._remove_wall(self.env, new_x, new_y)
+                        BaseSolver._add_wall(self.env, wall_to_move[0], wall_to_move[1])
             else:
                 # Revert the change
-                self.env.grid[new_y][new_x] = CellType.OPEN.value
-                self.env.grid[wall_to_move[1]][wall_to_move[0]] = CellType.WALL.value
+                BaseSolver._remove_wall(self.env, new_x, new_y)
+                BaseSolver._add_wall(self.env, wall_to_move[0], wall_to_move[1])
 
             # Cool the temperature
             temp *= 1 - self.cooling_rate

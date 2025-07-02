@@ -44,7 +44,7 @@ class HybridGeneticSolver(BaseSolver):
         env.reset()
         for x, y in individual:
             # Create a temporary BaseSolver to access _add_wall
-            BaseSolver(env)._add_wall(x, y)
+            BaseSolver._add_wall(env, x, y)
 
         path = env._calculateShortestPath()
         if not path.any():
@@ -153,7 +153,7 @@ class HybridGeneticSolver(BaseSolver):
                             if best_individual:
                                 self.env.reset()
                                 for x, y in best_individual:
-                                    self._add_wall(x, y)
+                                    BaseSolver._add_wall(self.env, x, y)
                             best_path = self.env._calculateShortestPath()
                             return best_path, best_path_length
 
@@ -183,7 +183,7 @@ class HybridGeneticSolver(BaseSolver):
         if best_individual:
             self.env.reset()
             for x, y in best_individual:
-                self._add_wall(x, y)
+                BaseSolver._add_wall(self.env, x, y)
 
         self.generations_run = generation + 1
         best_path = self.env._calculateShortestPath()

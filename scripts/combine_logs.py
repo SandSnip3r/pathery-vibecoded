@@ -14,9 +14,11 @@ def combine_logs(log_dir, output_file):
     corrupt_lines = 0
     invalid_shape_lines = 0
 
+    output_filename = os.path.basename(output_file)
+
     with open(output_file, "w") as outfile:
         for filename in os.listdir(log_dir):
-            if filename.endswith(".jsonl"):
+            if filename.endswith(".jsonl") and filename != output_filename:
                 file_path = os.path.join(log_dir, filename)
                 with open(file_path, "r") as infile:
                     for line in infile:
@@ -59,7 +61,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_file",
         type=str,
-        default="combined_mutations.jsonl",
         help="The output file.",
     )
     args = parser.parse_args()

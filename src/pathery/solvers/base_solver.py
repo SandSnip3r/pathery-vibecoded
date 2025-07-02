@@ -33,18 +33,20 @@ class BaseSolver:
         self.perf_logger = perf_logger
         self.start_time = None
 
-    def _add_wall(self, x: int, y: int) -> None:
+    @staticmethod
+    def _add_wall(env: PatheryEnv, x: int, y: int) -> None:
         """
         Adds a wall to the grid and decrements the remaining walls count.
         """
-        self.env.step((y, x))
+        env.step((y, x))
 
-    def _remove_wall(self, x: int, y: int) -> None:
+    @staticmethod
+    def _remove_wall(env: PatheryEnv, x: int, y: int) -> None:
         """
         Removes a wall from the grid and increments the remaining walls count.
         """
-        self.env.grid[y][x] = CellType.OPEN.value
-        self.env.remainingWalls += 1
+        env.grid[y][x] = CellType.OPEN.value
+        env.remainingWalls += 1
 
     def _randomly_place_walls(self, num_walls: int) -> None:
         """
@@ -62,10 +64,10 @@ class BaseSolver:
             if walls_placed >= num_walls:
                 break
 
-            self._add_wall(x, y)
+            BaseSolver._add_wall(self.env, x, y)
             path = self.env._calculateShortestPath()
 
             if path is not None and path.any():
                 walls_placed += 1
             else:
-                self._remove_wall(x, y)
+                BaseSolver._remove_wall(self.env, x, y)

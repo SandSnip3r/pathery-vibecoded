@@ -71,7 +71,7 @@ class HillClimbingSolver(BaseSolver):
                 best_grid = self.env.grid.copy()
                 self.env.reset()
                 for x, y in final_walls:
-                    self._add_wall(x, y)
+                    BaseSolver._add_wall(self.env, x, y)
                 best_path = self.env._calculateShortestPath()
 
         # Restore the best grid found
@@ -113,8 +113,8 @@ class HillClimbingSolver(BaseSolver):
                 for x_new, y_new in random.sample(
                     empty_squares, min(len(empty_squares), num_samples)
                 ):
-                    self._remove_wall(x_wall, y_wall)
-                    self._add_wall(x_new, y_new)
+                    BaseSolver._remove_wall(self.env, x_wall, y_wall)
+                    BaseSolver._add_wall(self.env, x_new, y_new)
 
                     path = self.env._calculateShortestPath()
                     path_length = len(path)
@@ -122,8 +122,8 @@ class HillClimbingSolver(BaseSolver):
                         best_neighbor_path_length = path_length
                         best_neighbor_grid = self.env.grid.copy()
 
-                    self._remove_wall(x_new, y_new)
-                    self._add_wall(x_wall, y_wall)
+                    BaseSolver._remove_wall(self.env, x_new, y_new)
+                    BaseSolver._add_wall(self.env, x_wall, y_wall)
 
             if best_neighbor_path_length > current_path_length:
                 self.env.grid = best_neighbor_grid
