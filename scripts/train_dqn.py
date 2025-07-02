@@ -1,8 +1,8 @@
 import argparse
-import json
-import random
 import os
 import sys
+import time
+import pickle
 import orbax.checkpoint as ocp
 from tensorboardX import SummaryWriter
 
@@ -11,36 +11,39 @@ from src.pathery.rl.dqn_agent import DQNAgent
 from src.pathery.utils import load_puzzle
 
 
-def create_balanced_dataset(data_path: str, oversample_factor: int = 10):
+def load_preprocessed_data(data_dir, agent, start_time):
     """
-    Creates a balanced dataset by oversampling positive rewards and undersampling others.
+    Loads preprocessed data from .pkl files into the replay buffer.
     """
-    with open(data_path, "r") as f:
-        data = [json.loads(line) for line in f]
+    print(f"[{time.time() - start_time:.2f}s] Starting to load preprocessed data...")
+    total_entries = 0
 
-    positive_rewards = [d for d in data if d["reward"] > 0]
-    zero_rewards = [d for d in data if d["reward"] == 0]
-    negative_rewards = [d for d in data if d["reward"] < 0]
+    for filename in sorted(os.listdir(data_dir)):
+        if filename.endswith(".pkl"):
+            print(f"[{time.time() - start_time:.2f}s] Loading {filename}...")
+            file_path = os.path.join(data_dir, filename)
+            with open(file_path, "rb") as f:
+                batch_data = pickle.load(f)
+                for entry in batch_data:
+                    agent.replay_buffer.push(
+                        entry["pre_mutation_state"],
+                        entry["mutation_info"],
+                        entry["reward"],
+                    )
+                    total_entries += 1
+            print(f"[{time.time() - start_time:.2f}s] Finished loading {filename}.")
 
-    # Oversample positive rewards
-    balanced_data = positive_rewards * oversample_factor
-
-    # Undersample zero and negative rewards to match the oversampled positive count
-    num_samples = len(balanced_data)
-    balanced_data.extend(
-        random.sample(zero_rewards, k=min(num_samples, len(zero_rewards)))
-    )
-    balanced_data.extend(
-        random.sample(negative_rewards, k=min(num_samples, len(negative_rewards)))
-    )
-
-    random.shuffle(balanced_data)
-    return balanced_data
+    print(f"[{time.time() - start_time:.2f}s] Finished loading all preprocessed data.")
+    print(f"  Loaded {total_entries} entries.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a DQN agent.")
-    parser.add_argument("data_path", type=str, help="Path to the training data.")
+    parser.add_argument(
+        "data_dir",
+        type=str,
+        help="Directory containing the preprocessed training data.",
+    )
     parser.add_argument(
         "--epochs", type=int, default=10, help="Number of training epochs."
     )
@@ -61,6 +64,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    start_time = time.time()
+    print(f"[{time.time() - start_time:.2f}s] Starting script...")
+
     # Construct absolute path for model checkpoint
     args.model_path = os.path.abspath(args.model_path)
 
@@ -72,34 +78,30 @@ if __name__ == "__main__":
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
     )
+    print(f"[{time.time() - start_time:.2f}s] DQN Agent created.")
 
     # Set up Orbax checkpointer
     options = ocp.CheckpointManagerOptions(max_to_keep=3, create=True)
     mngr = ocp.CheckpointManager(args.model_path, options=options)
+    print(f"[{time.time() - start_time:.2f}s] Checkpoint manager created.")
 
-    # Create a balanced dataset
-    balanced_data = create_balanced_dataset(args.data_path)
-
-    # Load the balanced data into the replay buffer
-    for entry in balanced_data:
-        state = entry["pre_mutation_state"]
-        if len(state) != 19 or len(state[0]) != 27:
-            print(f"Skipping state with unexpected shape: {len(state)}x{len(state[0])}")
-            continue
-        agent.replay_buffer.push(
-            state,
-            entry["mutation_info"],
-            entry["reward"],
-        )
+    # Load the preprocessed data into the replay buffer
+    load_preprocessed_data(args.data_dir, agent, start_time)
+    agent.replay_buffer.print_buffer_sizes()
+    print(f"[{time.time() - start_time:.2f}s] Replay buffer filled.")
 
     writer = SummaryWriter()
+    print(
+        f"[{time.time() - start_time:.2f}s] SummaryWriter created. Starting training..."
+    )
 
-    # Pre-train the agent on the balanced dataset
+    # Pre-train the agent on the loaded dataset
     agent.pretrain(args.epochs, args.batch_size, writer=writer)
+    print(f"[{time.time() - start_time:.2f}s] Training finished.")
 
     writer.close()
 
     # Save the trained model
     mngr.save(args.epochs, args=ocp.args.StandardSave(agent.state))
     mngr.wait_until_finished()
-    print(f"Model saved to {args.model_path}")
+    print(f"[{time.time() - start_time:.2f}s] Model saved to {args.model_path}")

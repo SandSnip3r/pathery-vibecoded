@@ -14,10 +14,28 @@ from pathery_env.envs.pathery import CellType, PatheryEnv
 
 class ExperienceReplayBuffer:
     def __init__(self, capacity: int, batch_size: int, key: jax.random.PRNGKey):
-        self.capacity = capacity
+        self.capacity = capacity // 3
         self.batch_size = batch_size
         self.key = key
-        self.buffers = {}
+        self.buffers = {
+            "positive": self._create_buffer(),
+            "zero": self._create_buffer(),
+            "negative": self._create_buffer(),
+        }
+
+    def _create_buffer(self):
+        return {
+            "states": np.zeros(
+                (self.capacity, 19, 27),
+                dtype=np.int32,
+            ),
+            "action_types": np.zeros((self.capacity, 1), dtype=np.int32),
+            "from_pos": np.zeros((self.capacity, 2), dtype=np.int32),
+            "to_pos": np.zeros((self.capacity, 2), dtype=np.int32),
+            "rewards": np.zeros((self.capacity, 1), dtype=np.float32),
+            "position": 0,
+            "size": 0,
+        }
 
     def _one_hot_encode(self, state: np.ndarray, max_channels: int) -> np.ndarray:
         """Converts a 2D grid state into a one-hot encoded 3D array."""
@@ -28,42 +46,75 @@ class ExperienceReplayBuffer:
         return one_hot
 
     def push(self, state, action, reward):
-        if not self.buffers:
-            # Initialize buffers on first push
-            state_array = self._one_hot_encode(np.array(state), 34)
-            state_array = np.transpose(state_array, (1, 0, 2))
-            self.buffers = {
-                "states": np.zeros(
-                    (self.capacity, *state_array.shape), dtype=np.float32
-                ),
-                "action_types": np.zeros((self.capacity, 1), dtype=np.int32),
-                "from_pos": np.zeros((self.capacity, 2), dtype=np.int32),
-                "to_pos": np.zeros((self.capacity, 2), dtype=np.int32),
-                "rewards": np.zeros((self.capacity, 1), dtype=np.float32),
-            }
-            self.position = 0
-            self.size = 0
+        if reward > 0:
+            buffer = self.buffers["positive"]
+        elif reward == 0:
+            buffer = self.buffers["zero"]
+        else:
+            buffer = self.buffers["negative"]
 
-        state_array = self._one_hot_encode(np.array(state), 34)
-        state_array = np.transpose(state_array, (1, 0, 2))
-        self.buffers["states"][self.position] = state_array
+        position = buffer["position"]
+        buffer["states"][position] = np.array(state)
 
         action_type_map = {"MOVE": 0, "ADD": 1, "REMOVE": 2}
-        self.buffers["action_types"][self.position] = action_type_map[action["type"]]
-        self.buffers["from_pos"][self.position] = action.get("from", [-1, -1])
-        self.buffers["to_pos"][self.position] = action.get("to", [-1, -1])
-        self.buffers["rewards"][self.position] = reward
+        buffer["action_types"][position] = action_type_map[action["type"]]
+        buffer["from_pos"][position] = action.get("from", [-1, -1])
+        buffer["to_pos"][position] = action.get("to", [-1, -1])
+        buffer["rewards"][position] = reward
 
-        self.position = (self.position + 1) % self.capacity
-        self.size = min(self.size + 1, self.capacity)
+        buffer["position"] = (position + 1) % self.capacity
+        buffer["size"] = min(buffer["size"] + 1, self.capacity)
 
     def sample(self):
         self.key, subkey = jax.random.split(self.key)
-        indices = jax.random.randint(subkey, (self.batch_size,), 0, self.size)
-        return {k: v[indices] for k, v in self.buffers.items()}
+        batch_size_per_buffer = self.batch_size // 3
+
+        samples = []
+        sample_counts = {}
+        for buffer_type in ["positive", "zero", "negative"]:
+            buffer = self.buffers[buffer_type]
+            if buffer["size"] > 0:
+                indices = jax.random.randint(
+                    subkey, (batch_size_per_buffer,), 0, buffer["size"]
+                )
+                batch = {
+                    k: v[indices]
+                    for k, v in buffer.items()
+                    if k not in ["position", "size"]
+                }
+
+                # One-hot encode the states
+                encoded_states = np.array(
+                    [self._one_hot_encode(s, 34) for s in batch["states"]]
+                )
+                batch["states"] = np.transpose(encoded_states, (0, 2, 1, 3))
+
+                samples.append(batch)
+                sample_counts[buffer_type] = len(indices)
+            else:
+                sample_counts[buffer_type] = 0
+
+        print(
+            f"Sampling - Positive: {sample_counts['positive']}, Zero: {sample_counts['zero']}, Negative: {sample_counts['negative']}"
+        )
+
+        # Concatenate samples from all buffers
+        if not samples:
+            return {}
+
+        concatenated_batch = {}
+        for key in samples[0].keys():
+            concatenated_batch[key] = np.concatenate([s[key] for s in samples], axis=0)
+
+        return concatenated_batch
+
+    def print_buffer_sizes(self):
+        print("Replay buffer sizes:")
+        for buffer_type, buffer in self.buffers.items():
+            print(f"  - {buffer_type.capitalize()}: {buffer['size']} items")
 
     def __len__(self):
-        return self.size
+        return sum(b["size"] for b in self.buffers.values())
 
 
 class DQN(nn.Module):
@@ -88,6 +139,57 @@ class DQN(nn.Module):
         return removal_scores, placement_scores, action_type_scores
 
 
+class ResidualBlock(nn.Module):
+    features: int
+
+    @nn.compact
+    def __call__(self, x):
+        y = nn.Conv(features=self.features, kernel_size=(3, 3), padding="SAME")(x)
+        y = nn.relu(y)
+        y = nn.Conv(features=self.features, kernel_size=(3, 3), padding="SAME")(y)
+        return nn.relu(x + y)
+
+
+class AttentionBlock(nn.Module):
+    features: int
+    num_heads: int = 4
+
+    @nn.compact
+    def __call__(self, x):
+        # Simple self-attention
+        batch_size, height, width, channels = x.shape
+        x_reshaped = x.reshape(batch_size, height * width, channels)
+
+        attended_x = nn.MultiHeadDotProductAttention(
+            num_heads=self.num_heads, qkv_features=self.features
+        )(x_reshaped, x_reshaped)
+
+        attended_x = attended_x.reshape(batch_size, height, width, channels)
+
+        return nn.LayerNorm()(x + attended_x)
+
+
+class DQN_ResNet(nn.Module):
+    @nn.compact
+    def __call__(self, x):
+        x = nn.Conv(features=64, kernel_size=(3, 3), padding="SAME")(x)
+        for _ in range(4):
+            x = ResidualBlock(features=64)(x)
+        x = AttentionBlock(features=64)(x)
+        x = x.reshape((x.shape[0], -1))  # Flatten
+        x = nn.Dense(features=512)(x)
+        x = nn.relu(x)
+
+        # Output heads
+        removal_scores = nn.Dense(features=27 * 19, name="removal")(x)
+        placement_scores = nn.Dense(features=27 * 19, name="placement")(x)
+        action_type_scores = nn.Dense(features=3, name="action_type")(
+            x
+        )  # MOVE, ADD, REMOVE
+
+        return removal_scores, placement_scores, action_type_scores
+
+
 class DQNAgent:
     def __init__(
         self, env: PatheryEnv, learning_rate=1e-4, buffer_size=100000, batch_size=128
@@ -97,7 +199,8 @@ class DQNAgent:
         self.key = jax.random.PRNGKey(0)
         self.replay_buffer = ExperienceReplayBuffer(buffer_size, batch_size, self.key)
 
-        self.model = DQN()
+        # self.model = DQN()
+        self.model = DQN_ResNet()
 
         # The number of channels is fixed to the maximum possible value
         # to ensure the network can handle any puzzle.
