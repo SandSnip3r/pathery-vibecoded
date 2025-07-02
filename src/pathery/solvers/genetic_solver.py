@@ -120,7 +120,8 @@ class GeneticSolver(BaseSolver):
             self.env.reset()
             open_cells = np.where(self.env.grid == CellType.OPEN.value)
             num_open_cells = len(open_cells[0])
-            num_walls = random.randint(1, num_open_cells)
+            max_walls = min(self.env.wallsToPlace, num_open_cells)
+            num_walls = random.randint(1, max_walls)
             self._randomly_place_walls(num_walls)
             self.population.append(self.env.grid.copy())
 
@@ -163,7 +164,27 @@ class GeneticSolver(BaseSolver):
         offspring1[y1:y2, x1:x2] = parent2[y1:y2, x1:x2]
         offspring2[y1:y2, x1:x2] = parent1[y1:y2, x1:x2]
 
+        offspring1 = self._repair_chromosome(offspring1)
+        offspring2 = self._repair_chromosome(offspring2)
+
         return offspring1, offspring2
+
+    def _repair_chromosome(self, chromosome: np.ndarray) -> np.ndarray:
+        """
+        Repairs a chromosome to ensure it's valid.
+        """
+        # Ensure wall count is not exceeded
+        num_walls = np.sum(chromosome == CellType.WALL.value)
+        if num_walls > self.env.wallsToPlace:
+            wall_positions = np.where(chromosome == CellType.WALL.value)
+            wall_positions = list(zip(wall_positions[1], wall_positions[0]))
+            random.shuffle(wall_positions)
+
+            for _ in range(num_walls - self.env.wallsToPlace):
+                wall_to_remove = wall_positions.pop()
+                chromosome[wall_to_remove[1], wall_to_remove[0]] = CellType.OPEN.value
+
+        return chromosome
 
     def _mutate(self, chromosome: np.ndarray) -> np.ndarray:
         """
@@ -173,7 +194,20 @@ class GeneticSolver(BaseSolver):
         fitness_before = self._calculate_fitness(pre_mutation_state)
 
         mutated_chromosome = chromosome.copy()
-        mutation_type = random.choice(["MOVE", "ADD", "REMOVE"])
+
+        num_walls = np.sum(mutated_chromosome == CellType.WALL.value)
+
+        valid_mutations = []
+        if num_walls < self.env.wallsToPlace:
+            valid_mutations.append("ADD")
+        if num_walls > 0:
+            valid_mutations.append("REMOVE")
+            valid_mutations.append("MOVE")
+
+        if not valid_mutations:
+            return mutated_chromosome  # No possible mutation
+
+        mutation_type = random.choice(valid_mutations)
 
         if mutation_type == "MOVE":
             wall_positions = np.where(mutated_chromosome == CellType.WALL.value)
