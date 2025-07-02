@@ -11,12 +11,12 @@ from src.pathery.rl.dqn_agent import DQNAgent
 from src.pathery.utils import load_puzzle
 
 
-def load_preprocessed_data(data_dir, agent, start_time):
+def load_preprocessed_data(data_dir, start_time):
     """
-    Loads preprocessed data from .pkl files into the replay buffer.
+    Loads preprocessed data from .pkl files into three lists based on reward.
     """
     print(f"[{time.time() - start_time:.2f}s] Starting to load preprocessed data...")
-    total_entries = 0
+    experiences = {"positive": [], "zero": [], "negative": []}
 
     for filename in sorted(os.listdir(data_dir)):
         if filename.endswith(".pkl"):
@@ -25,16 +25,21 @@ def load_preprocessed_data(data_dir, agent, start_time):
             with open(file_path, "rb") as f:
                 batch_data = pickle.load(f)
                 for entry in batch_data:
-                    agent.replay_buffer.push(
-                        entry["pre_mutation_state"],
-                        entry["mutation_info"],
-                        entry["reward"],
-                    )
-                    total_entries += 1
+                    reward = entry["reward"]
+                    if reward > 0:
+                        experiences["positive"].append(entry)
+                    elif reward == 0:
+                        experiences["zero"].append(entry)
+                    else:
+                        experiences["negative"].append(entry)
             print(f"[{time.time() - start_time:.2f}s] Finished loading {filename}.")
 
     print(f"[{time.time() - start_time:.2f}s] Finished loading all preprocessed data.")
+    total_entries = sum(len(v) for v in experiences.values())
     print(f"  Loaded {total_entries} entries.")
+    for reward_type, data in experiences.items():
+        print(f"  - {reward_type.capitalize()}: {len(data)} entries")
+    return experiences
 
 
 if __name__ == "__main__":
@@ -85,10 +90,9 @@ if __name__ == "__main__":
     mngr = ocp.CheckpointManager(args.model_path, options=options)
     print(f"[{time.time() - start_time:.2f}s] Checkpoint manager created.")
 
-    # Load the preprocessed data into the replay buffer
-    load_preprocessed_data(args.data_dir, agent, start_time)
-    agent.replay_buffer.print_buffer_sizes()
-    print(f"[{time.time() - start_time:.2f}s] Replay buffer filled.")
+    # Load the preprocessed data
+    experiences = load_preprocessed_data(args.data_dir, start_time)
+    print(f"[{time.time() - start_time:.2f}s] Data loaded.")
 
     writer = SummaryWriter()
     print(
@@ -96,7 +100,7 @@ if __name__ == "__main__":
     )
 
     # Pre-train the agent on the loaded dataset
-    agent.pretrain(args.epochs, args.batch_size, writer=writer)
+    agent.pretrain(experiences, args.epochs, args.batch_size, start_time, writer=writer)
     print(f"[{time.time() - start_time:.2f}s] Training finished.")
 
     writer.close()

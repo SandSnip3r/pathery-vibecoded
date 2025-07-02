@@ -1,6 +1,9 @@
 import random
+import os
+import time
 from typing import Any, Dict, Optional
 
+from flax.training import checkpoints
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
@@ -70,7 +73,6 @@ class ExperienceReplayBuffer:
         batch_size_per_buffer = self.batch_size // 3
 
         samples = []
-        sample_counts = {}
         for buffer_type in ["positive", "zero", "negative"]:
             buffer = self.buffers[buffer_type]
             if buffer["size"] > 0:
@@ -82,21 +84,7 @@ class ExperienceReplayBuffer:
                     for k, v in buffer.items()
                     if k not in ["position", "size"]
                 }
-
-                # One-hot encode the states
-                encoded_states = np.array(
-                    [self._one_hot_encode(s, 34) for s in batch["states"]]
-                )
-                batch["states"] = np.transpose(encoded_states, (0, 2, 1, 3))
-
                 samples.append(batch)
-                sample_counts[buffer_type] = len(indices)
-            else:
-                sample_counts[buffer_type] = 0
-
-        print(
-            f"Sampling - Positive: {sample_counts['positive']}, Zero: {sample_counts['zero']}, Negative: {sample_counts['negative']}"
-        )
 
         # Concatenate samples from all buffers
         if not samples:
@@ -216,6 +204,10 @@ class DQNAgent:
             tx=optax.adam(learning_rate),
         )
 
+        # Restore from the latest checkpoint if one exists
+        checkpoint_dir = os.path.abspath("output/checkpoints")
+        self.state = checkpoints.restore_checkpoint(checkpoint_dir, self.state)
+
     def choose_action(self, board_state: np.ndarray, epsilon: float) -> Dict[str, Any]:
         if random.random() < epsilon:
             # Random action
@@ -299,8 +291,13 @@ class DQNAgent:
         to_pos = batch["to_pos"]
 
         def loss_fn(params):
+            # One-hot encode the states inside the jitted function
+            states_one_hot = jax.nn.one_hot(batch["states"], num_classes=34)
+            # Transpose to (batch, height, width, channels)
+            states_one_hot = jnp.transpose(states_one_hot, (0, 2, 1, 3))
+
             removal_scores, placement_scores, action_type_scores = state.apply_fn(
-                {"params": params}, batch["states"]
+                {"params": params}, states_one_hot
             )
 
             def q_value_fn(i):
@@ -329,15 +326,60 @@ class DQNAgent:
 
     def pretrain(
         self,
+        experiences: Dict[str, list],
         epochs: int,
         batch_size: int,
+        start_time: float,
         writer: Optional[SummaryWriter] = None,
     ):
-        num_batches = len(self.replay_buffer) // batch_size
-        for epoch in range(epochs):
+        checkpoint_dir = os.path.abspath("output/checkpoints")
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+
+        # Restore from the latest checkpoint if one exists
+        self.state = checkpoints.restore_checkpoint(checkpoint_dir, self.state)
+        start_epoch = int(self.state.step)
+
+        # Calculate number of batches based on the smallest category
+        min_len = min(len(v) for v in experiences.values())
+        num_batches = min_len // (batch_size // 3)
+
+        for epoch in range(start_epoch, epochs):
+            # Shuffle each experience list
+            for key in experiences:
+                np.random.shuffle(experiences[key])
+
             total_loss = 0
             for batch_idx in range(num_batches):
-                batch = self.replay_buffer.sample()
+                batch_data = []
+                batch_size_per_buffer = batch_size // 3
+                for key in ["positive", "zero", "negative"]:
+                    start = batch_idx * batch_size_per_buffer
+                    end = start + batch_size_per_buffer
+                    batch_data.extend(experiences[key][start:end])
+
+                # Convert list of dicts to dict of lists
+                batch = {
+                    "states": np.array([e["pre_mutation_state"] for e in batch_data]),
+                    "action_types": np.array(
+                        [
+                            {"MOVE": 0, "ADD": 1, "REMOVE": 2}[
+                                e["mutation_info"]["type"]
+                            ]
+                            for e in batch_data
+                        ]
+                    ).reshape(-1, 1),
+                    "from_pos": np.array(
+                        [e["mutation_info"].get("from", [-1, -1]) for e in batch_data]
+                    ),
+                    "to_pos": np.array(
+                        [e["mutation_info"].get("to", [-1, -1]) for e in batch_data]
+                    ),
+                    "rewards": np.array([e["reward"] for e in batch_data]).reshape(
+                        -1, 1
+                    ),
+                }
+
                 self.state, loss = self._jitted_train_step(self.state, batch)
 
                 total_loss += loss
@@ -346,6 +388,17 @@ class DQNAgent:
                     writer.add_scalar("Loss/train", loss, global_step)
 
             avg_loss = total_loss / num_batches
-            print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss}")
+            print(
+                f"[{time.time() - start_time:.2f}s] Epoch {epoch + 1}/{epochs}, Loss: {avg_loss}"
+            )
             if writer:
                 writer.add_scalar("Loss/epoch", avg_loss, epoch)
+
+            # Save checkpoint every 10 epochs
+            if (epoch + 1) % 10 == 0:
+                checkpoints.save_checkpoint(
+                    checkpoint_dir, self.state, step=epoch + 1, keep=3, overwrite=True
+                )
+                print(
+                    f"[{time.time() - start_time:.2f}s] Saved checkpoint at epoch {epoch + 1}"
+                )
