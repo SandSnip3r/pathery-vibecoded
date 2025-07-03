@@ -12,7 +12,7 @@ import optax
 from flax.training import train_state
 from tensorboardX import SummaryWriter
 
-from pathery_env.envs.pathery import CellType, PatheryEnv
+from pathery_env.envs.pathery import CellType
 
 
 class ExperienceReplayBuffer:
@@ -180,21 +180,30 @@ class DQN_ResNet(nn.Module):
 
 class DQNAgent:
     def __init__(
-        self, env: PatheryEnv, learning_rate=1e-4, buffer_size=100000, batch_size=128
+        self,
+        learning_rate=1e-4,
+        buffer_size=100000,
+        batch_size=128,
+        epsilon_start=1.0,
+        epsilon_end=0.05,
+        epsilon_decay=0.995,
+        grid_size=(19, 27),
+        max_channels=34,
     ):
-        self.env = env
+        self.grid_size = grid_size
+        self.max_channels = max_channels
         self.batch_size = batch_size
         self.key = jax.random.PRNGKey(0)
         self.replay_buffer = ExperienceReplayBuffer(buffer_size, batch_size, self.key)
+        self.epsilon = epsilon_start
+        self.epsilon_start = epsilon_start
+        self.epsilon_end = epsilon_end
+        self.epsilon_decay = epsilon_decay
 
-        # self.model = DQN()
         self.model = DQN_ResNet()
 
-        # The number of channels is fixed to the maximum possible value
-        # to ensure the network can handle any puzzle.
-        MAX_CHANNELS = 34
         dummy_state = jnp.zeros(
-            (1, self.env.gridSize[0], self.env.gridSize[1], MAX_CHANNELS)
+            (1, self.grid_size[0], self.grid_size[1], self.max_channels)
         )
         params = self.model.init(self.key, dummy_state)["params"]
 
@@ -208,77 +217,110 @@ class DQNAgent:
         checkpoint_dir = os.path.abspath("output/checkpoints")
         self.state = checkpoints.restore_checkpoint(checkpoint_dir, self.state)
 
-    def choose_action(self, board_state: np.ndarray, epsilon: float) -> Dict[str, Any]:
-        if random.random() < epsilon:
-            # Random action
-            mutation_type = random.choice(["MOVE", "ADD", "REMOVE"])
-            if mutation_type == "MOVE":
-                wall_positions = np.where(board_state == CellType.WALL.value)
-                wall_positions = list(zip(wall_positions[1], wall_positions[0]))
-                empty_squares = np.where(board_state == CellType.OPEN.value)
-                empty_squares = list(zip(empty_squares[1], empty_squares[0]))
-                if not wall_positions or not empty_squares:
-                    return self.choose_action(board_state, epsilon)  # Try again
-                wall_to_move = random.choice(wall_positions)
-                new_position = random.choice(empty_squares)
+    def set_inference_mode(self):
+        """Sets epsilon to 0 for pure exploitation."""
+        self.epsilon = 0.0
+
+    def decay_epsilon(self):
+        """Decays epsilon for exploration-exploitation trade-off."""
+        if self.epsilon > self.epsilon_end:
+            self.epsilon *= self.epsilon_decay
+
+    def _one_hot_encode(self, state: np.ndarray) -> np.ndarray:
+        """Converts a 2D grid state into a one-hot encoded 3D array."""
+        one_hot = jax.nn.one_hot(state, self.max_channels)
+        return jnp.transpose(one_hot, (1, 0, 2))
+
+    def choose_action(self, board_state: np.ndarray) -> Dict[str, Any]:
+        """
+        Chooses an action based on the board state, ensuring validity.
+        """
+        wall_positions = np.argwhere(board_state == CellType.WALL.value)
+        open_squares = np.argwhere(board_state == CellType.OPEN.value)
+
+        possible_actions = []
+        if len(open_squares) > 0:
+            possible_actions.append("ADD")
+        if len(wall_positions) > 0:
+            possible_actions.append("REMOVE")
+        if len(wall_positions) > 0 and len(open_squares) > 0:
+            possible_actions.append("MOVE")
+
+        if not possible_actions:
+            return {}
+
+        # Epsilon-greedy action selection
+        if random.random() < self.epsilon:
+            action_type = random.choice(possible_actions)
+            if action_type == "ADD":
+                pos = random.choice(open_squares)
+                return {"type": "ADD", "to": [int(pos[1]), int(pos[0])]}
+            elif action_type == "REMOVE":
+                pos = random.choice(wall_positions)
+                return {"type": "REMOVE", "from": [int(pos[1]), int(pos[0])]}
+            elif action_type == "MOVE":
+                from_pos = random.choice(wall_positions)
+                to_pos = random.choice(open_squares)
                 return {
                     "type": "MOVE",
-                    "from": [int(wall_to_move[0]), int(wall_to_move[1])],
-                    "to": [int(new_position[0]), int(new_position[1])],
-                }
-            elif mutation_type == "ADD":
-                empty_squares = np.where(board_state == CellType.OPEN.value)
-                empty_squares = list(zip(empty_squares[1], empty_squares[0]))
-                if not empty_squares:
-                    return self.choose_action(board_state, epsilon)  # Try again
-                new_wall_position = random.choice(empty_squares)
-                return {
-                    "type": "ADD",
-                    "to": [int(new_wall_position[0]), int(new_wall_position[1])],
-                }
-            elif mutation_type == "REMOVE":
-                wall_positions = np.where(board_state == CellType.WALL.value)
-                wall_positions = list(zip(wall_positions[1], wall_positions[0]))
-                if not wall_positions:
-                    return self.choose_action(board_state, epsilon)  # Try again
-                wall_to_remove = random.choice(wall_positions)
-                return {
-                    "type": "REMOVE",
-                    "from": [int(wall_to_remove[0]), int(wall_to_remove[1])],
+                    "from": [int(from_pos[1]), int(from_pos[0])],
+                    "to": [int(to_pos[1]), int(to_pos[0])],
                 }
         else:
-            # Greedy action
-            # One-hot encode the board state and add a batch dimension
-            obs = self.env._get_obs()["board"]
-            obs = jnp.transpose(obs, (1, 2, 0))
-
-            # Pad the observation if necessary
-            if obs.shape[-1] < 34:
-                padding = jnp.zeros((obs.shape[0], obs.shape[1], 34 - obs.shape[-1]))
-                obs = jnp.concatenate([obs, padding], axis=-1)
-
+            # Greedy action with masking
+            obs = self._one_hot_encode(board_state)
             obs = jnp.expand_dims(obs, axis=0)
 
             removal_scores, placement_scores, action_type_scores = self.state.apply_fn(
                 {"params": self.state.params}, obs
             )
 
+            # Mask invalid actions
+            mask_add = "ADD" in possible_actions
+            mask_remove = "REMOVE" in possible_actions
+            mask_move = "MOVE" in possible_actions
+            action_type_scores = jnp.where(
+                jnp.array([mask_move, mask_add, mask_remove]),
+                action_type_scores,
+                -jnp.inf,
+            )
+
+            # Mask invalid positions
+            wall_mask = (board_state == CellType.WALL.value).flatten()
+            open_mask = (board_state == CellType.OPEN.value).flatten()
+            removal_scores = jnp.where(wall_mask, removal_scores, -jnp.inf)
+            placement_scores = jnp.where(open_mask, placement_scores, -jnp.inf)
+
             action_type = jnp.argmax(action_type_scores).item()
 
             if action_type == 0:  # MOVE
-                removal_pos_flat = jnp.argmax(removal_scores).item()
-                placement_pos_flat = jnp.argmax(placement_scores).item()
-                from_pos = [int(removal_pos_flat % 27), int(removal_pos_flat // 27)]
-                to_pos = [int(placement_pos_flat % 27), int(placement_pos_flat // 27)]
+                from_pos_flat = jnp.argmax(removal_scores).item()
+                to_pos_flat = jnp.argmax(placement_scores).item()
+                from_pos = [
+                    int(from_pos_flat % self.grid_size[1]),
+                    int(from_pos_flat // self.grid_size[1]),
+                ]
+                to_pos = [
+                    int(to_pos_flat % self.grid_size[1]),
+                    int(to_pos_flat // self.grid_size[1]),
+                ]
                 return {"type": "MOVE", "from": from_pos, "to": to_pos}
             elif action_type == 1:  # ADD
-                placement_pos_flat = jnp.argmax(placement_scores).item()
-                to_pos = [int(placement_pos_flat % 27), int(placement_pos_flat // 27)]
+                to_pos_flat = jnp.argmax(placement_scores).item()
+                to_pos = [
+                    int(to_pos_flat % self.grid_size[1]),
+                    int(to_pos_flat // self.grid_size[1]),
+                ]
                 return {"type": "ADD", "to": to_pos}
             elif action_type == 2:  # REMOVE
-                removal_pos_flat = jnp.argmax(removal_scores).item()
-                from_pos = [int(removal_pos_flat % 27), int(removal_pos_flat // 27)]
+                from_pos_flat = jnp.argmax(removal_scores).item()
+                from_pos = [
+                    int(from_pos_flat % self.grid_size[1]),
+                    int(from_pos_flat // self.grid_size[1]),
+                ]
                 return {"type": "REMOVE", "from": from_pos}
+
+        return {}
 
     @staticmethod
     @jax.jit
@@ -323,6 +365,20 @@ class DQNAgent:
         loss, grads = jax.value_and_grad(loss_fn)(state.params)
         state = state.apply_gradients(grads=grads)
         return state, loss
+
+    def train_step(self):
+        """
+        Performs a single training step on a batch from the replay buffer.
+        """
+        if len(self.replay_buffer) < self.batch_size:
+            return
+
+        batch = self.replay_buffer.sample()
+        if not batch:
+            return
+
+        self.state, loss = self._jitted_train_step(self.state, batch)
+        return loss
 
     def pretrain(
         self,

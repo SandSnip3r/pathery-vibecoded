@@ -8,7 +8,9 @@ from pathery_env.envs.pathery import PatheryEnv
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
+from flax.training import checkpoints
 
+from pathery.rl.dqn_agent import DQNAgent
 from pathery.solvers import (
     DqnGeneticSolver,
     FocusedSearchSolver,
@@ -79,7 +81,16 @@ if __name__ == "__main__":
         type=str,
         help="Path to a directory to write mutation data logs (JSONL format).",
     )
+    parser.add_argument(
+        "--dqn_model_path",
+        type=str,
+        help="Path to a trained DQN model checkpoint to use with a hybrid solver.",
+    )
     args = parser.parse_args()
+
+    # Convert dqn_model_path to an absolute path if provided
+    if args.dqn_model_path:
+        args.dqn_model_path = os.path.abspath(args.dqn_model_path)
 
     console = Console()
 
@@ -140,6 +151,18 @@ if __name__ == "__main__":
         solver_config["data_log_dir"] = args.data_log_dir
     # Pass the performance logger to the solver
     solver_config["perf_logger"] = perf_logger
+
+    # Load a pre-trained DQN agent if specified
+    if args.dqn_model_path and args.solver == "hybrid_ga":
+        print(f"Loading DQN model from {args.dqn_model_path}...")
+        dqn_agent = DQNAgent()
+        dqn_agent.state = checkpoints.restore_checkpoint(
+            args.dqn_model_path, target=dqn_agent.state
+        )
+        solver_config["dqn_agent"] = dqn_agent
+        solver_config["disable_dqn_training"] = True
+        print("DQN model loaded.")
+
     solver = solver_factory(args.solver, env, **solver_config)
 
     # Find the best path

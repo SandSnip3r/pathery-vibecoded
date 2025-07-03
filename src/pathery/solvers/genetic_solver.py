@@ -22,6 +22,7 @@ class GeneticSolver(BaseSolver):
         tournament_size: int = 3,
         mutation_rate: float = 0.1,
         crossover_rate: float = 0.8,
+        elitism_size: int = 2,
         best_known_solution: int = 0,
         time_limit: Optional[int] = None,
         perf_logger: Optional[logging.Logger] = None,
@@ -42,6 +43,7 @@ class GeneticSolver(BaseSolver):
         self.tournament_size = tournament_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+        self.elitism_size = elitism_size
         self.population = []
         self.data_log_dir = data_log_dir
 
@@ -94,8 +96,20 @@ class GeneticSolver(BaseSolver):
                     )
                     self.perf_logger.handlers[0].flush()
 
+                self._before_selection_hook(gen)
+
                 # Create new population
                 new_population = []
+
+                # Elitism: Carry over the best individuals
+                elite_indices = sorted(
+                    range(len(fitness_scores)),
+                    key=lambda i: fitness_scores[i],
+                    reverse=True,
+                )[: self.elitism_size]
+                for i in elite_indices:
+                    new_population.append(self.population[i])
+
                 mutations = 0
                 while len(new_population) < self.population_size:
                     parent1 = self._tournament_selection(fitness_scores)
@@ -119,6 +133,7 @@ class GeneticSolver(BaseSolver):
                     new_population.append(offspring2)
 
                 self.population = new_population
+                self._after_new_population_hook(gen)
         finally:
             if data_logger:
                 data_logger.close()
@@ -290,3 +305,17 @@ class GeneticSolver(BaseSolver):
             data_logger.write(json.dumps(log_entry) + "\n")
 
         return mutated_env
+
+    def _before_selection_hook(self, generation: int):
+        """
+        A hook that is called before the selection process.
+        Subclasses can override this to implement custom logic.
+        """
+        pass
+
+    def _after_new_population_hook(self, generation: int):
+        """
+        A hook that is called after a new population is created.
+        Subclasses can override this to implement custom logic.
+        """
+        pass
