@@ -3,7 +3,6 @@ import os
 import sys
 import time
 import pickle
-import orbax.checkpoint as ocp
 from tensorboardX import SummaryWriter
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -62,9 +61,15 @@ if __name__ == "__main__":
         help="Learning rate for the optimizer.",
     )
     parser.add_argument(
-        "--model_path",
+        "--load_model_path",
         type=str,
-        default="output/checkpoints",
+        default=None,
+        help="Path to load the model checkpoint for fine-tuning.",
+    )
+    parser.add_argument(
+        "--save_model_path",
+        type=str,
+        default=None,
         help="Path to save the trained model checkpoint.",
     )
     args = parser.parse_args()
@@ -72,23 +77,28 @@ if __name__ == "__main__":
     start_time = time.time()
     print(f"[{time.time() - start_time:.2f}s] Starting script...")
 
-    # Construct absolute path for model checkpoint
-    args.model_path = os.path.abspath(args.model_path)
+    # Determine save path
+    save_model_path = args.save_model_path
+    if save_model_path is None:
+        if args.load_model_path:
+            save_model_path = f"{args.load_model_path}_finetuned"
+        else:
+            save_model_path = "output/checkpoints_new"
+
+    # Construct absolute paths
+    if args.load_model_path:
+        args.load_model_path = os.path.abspath(args.load_model_path)
+    save_model_path = os.path.abspath(save_model_path)
 
     # Create a dummy environment to initialize the agent
     env, _ = load_puzzle("data/puzzles/ucu/puzzle_6.json")
 
     agent = DQNAgent(
-        env,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
+        model_path=args.load_model_path,
     )
     print(f"[{time.time() - start_time:.2f}s] DQN Agent created.")
-
-    # Set up Orbax checkpointer
-    options = ocp.CheckpointManagerOptions(max_to_keep=3, create=True)
-    mngr = ocp.CheckpointManager(args.model_path, options=options)
-    print(f"[{time.time() - start_time:.2f}s] Checkpoint manager created.")
 
     # Load the preprocessed data
     experiences = load_preprocessed_data(args.data_dir, start_time)
@@ -106,6 +116,5 @@ if __name__ == "__main__":
     writer.close()
 
     # Save the trained model
-    mngr.save(args.epochs, args=ocp.args.StandardSave(agent.state))
-    mngr.wait_until_finished()
-    print(f"[{time.time() - start_time:.2f}s] Model saved to {args.model_path}")
+    agent.save_model(save_model_path, args.epochs)
+    print(f"[{time.time() - start_time:.2f}s] Model saved to {save_model_path}")

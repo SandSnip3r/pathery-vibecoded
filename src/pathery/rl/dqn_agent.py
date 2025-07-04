@@ -11,6 +11,7 @@ import numpy as np
 import optax
 from flax.training import train_state
 from tensorboardX import SummaryWriter
+import orbax.checkpoint as ocp
 
 from pathery_env.envs.pathery import CellType
 
@@ -189,6 +190,7 @@ class DQNAgent:
         epsilon_decay=0.995,
         grid_size=(19, 27),
         max_channels=34,
+        model_path: Optional[str] = None,
     ):
         self.grid_size = grid_size
         self.max_channels = max_channels
@@ -213,9 +215,10 @@ class DQNAgent:
             tx=optax.adam(learning_rate),
         )
 
-        # Restore from the latest checkpoint if one exists
-        checkpoint_dir = os.path.abspath("output/checkpoints")
-        self.state = checkpoints.restore_checkpoint(checkpoint_dir, self.state)
+        # Restore from the latest checkpoint if a path is provided
+        if model_path:
+            model_path = os.path.abspath(model_path)
+            self.state = checkpoints.restore_checkpoint(model_path, self.state)
 
     def set_inference_mode(self):
         """Sets epsilon to 0 for pure exploitation."""
@@ -231,7 +234,7 @@ class DQNAgent:
         one_hot = jax.nn.one_hot(state, self.max_channels)
         return jnp.transpose(one_hot, (1, 0, 2))
 
-    def choose_action(self, board_state: np.ndarray) -> Dict[str, Any]:
+    def choose_action(self, board_state: np.ndarray, epsilon: float) -> Dict[str, Any]:
         """
         Chooses an action based on the board state, ensuring validity.
         """
@@ -250,7 +253,7 @@ class DQNAgent:
             return {}
 
         # Epsilon-greedy action selection
-        if random.random() < self.epsilon:
+        if random.random() < epsilon:
             action_type = random.choice(possible_actions)
             if action_type == "ADD":
                 pos = random.choice(open_squares)
@@ -366,6 +369,15 @@ class DQNAgent:
         state = state.apply_gradients(grads=grads)
         return state, loss
 
+    def save_model(self, save_path: str, epoch: int):
+        """Saves the model checkpoint."""
+        save_path = os.path.abspath(save_path)
+        options = ocp.CheckpointManagerOptions(max_to_keep=3, create=True)
+        mngr = ocp.CheckpointManager(save_path, options=options)
+        mngr.save(epoch, args=ocp.args.StandardSave(self.state))
+        mngr.wait_until_finished()
+        print(f"Model saved to {save_path}")
+
     def train_step(self):
         """
         Performs a single training step on a batch from the replay buffer.
@@ -388,19 +400,20 @@ class DQNAgent:
         start_time: float,
         writer: Optional[SummaryWriter] = None,
     ):
-        checkpoint_dir = os.path.abspath("output/checkpoints")
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-
-        # Restore from the latest checkpoint if one exists
-        self.state = checkpoints.restore_checkpoint(checkpoint_dir, self.state)
-        start_epoch = int(self.state.step)
+        # Internal backup manager
+        backup_model_path = os.path.abspath(
+            os.path.join(
+                "output", f"checkpoints_backup_{time.strftime('%Y%m%d-%H%M%S')}"
+            )
+        )
+        options = ocp.CheckpointManagerOptions(max_to_keep=3, create=True)
+        backup_mngr = ocp.CheckpointManager(backup_model_path, options=options)
 
         # Calculate number of batches based on the smallest category
         min_len = min(len(v) for v in experiences.values())
         num_batches = min_len // (batch_size // 3)
 
-        for epoch in range(start_epoch, epochs):
+        for epoch in range(epochs):
             # Shuffle each experience list
             for key in experiences:
                 np.random.shuffle(experiences[key])
@@ -450,11 +463,10 @@ class DQNAgent:
             if writer:
                 writer.add_scalar("Loss/epoch", avg_loss, epoch)
 
-            # Save checkpoint every 10 epochs
+            # Save a backup checkpoint every 10 epochs
             if (epoch + 1) % 10 == 0:
-                checkpoints.save_checkpoint(
-                    checkpoint_dir, self.state, step=epoch + 1, keep=3, overwrite=True
-                )
+                backup_mngr.save(epoch + 1, args=ocp.args.StandardSave(self.state))
+                backup_mngr.wait_until_finished()
                 print(
-                    f"[{time.time() - start_time:.2f}s] Saved checkpoint at epoch {epoch + 1}"
+                    f"[{time.time() - start_time:.2f}s] Saved backup checkpoint at epoch {epoch + 1}"
                 )

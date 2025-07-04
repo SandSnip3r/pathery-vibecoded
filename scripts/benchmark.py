@@ -1,10 +1,14 @@
 import argparse
+import json
 import logging
 import os
 import statistics
+import sys
 import time
 from typing import List
 
+# Add the project root to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.pathery.main import load_config, solver_factory
 from src.pathery.utils import load_puzzle
 
@@ -21,15 +25,32 @@ def run_benchmarks(
         filename=log_file, level=logging.INFO, format="%(asctime)s - %(message)s"
     )
 
-    with open("benchmarks/solver_performance.md", "w") as f:
-        f.write("# Solver Performance\n\n")
-        f.write(
-            f"This document records the performance of the different solvers on all puzzles. The results are based on {num_runs} runs for each solver on each puzzle.\n"
-        )
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    solver_names = "_".join(solvers)
+
+    # Ensure the benchmarks directory exists
+    os.makedirs("benchmarks", exist_ok=True)
+    report_filename = f"benchmarks/solver_performance_{solver_names}_{timestamp}.md"
+
+    with open(report_filename, "w") as f:
+        f.write("# Solver Performance Report\n\n")
+        f.write("## Benchmark Details\n\n")
+        f.write(f"- **Solver(s):** {', '.join(solvers)}\n")
+        f.write(f"- **Timestamp:** {timestamp}\n")
+        f.write(f"- **Runs per Puzzle:** {num_runs}\n\n")
+
+        for solver_name in solvers:
+            solver_config = config["solvers"].get(solver_name, {})
+            if num_generations:
+                solver_config["generations"] = num_generations
+            f.write(f"### Configuration for `{solver_name}`\n\n")
+            f.write("```json\n")
+            f.write(json.dumps(solver_config, indent=2))
+            f.write("\n```\n\n")
 
     for puzzle_name in puzzles:
-        with open("benchmarks/solver_performance.md", "a") as f:
-            f.write(f"\n## data/puzzles/{puzzle_name}\n\n")
+        with open(report_filename, "a") as f:
+            f.write(f"\n## Puzzle: data/puzzles/{puzzle_name}\n\n")
             f.write(
                 "| Solver | Min Path | Max Path | Mean Path | Mean Duration (s) |\n"
             )
@@ -62,7 +83,7 @@ def run_benchmarks(
 
             result = f"| {solver_name} | {min_path} | {max_path} | {mean_path:.2f} | {mean_duration:.4f} |"
 
-            with open("benchmarks/solver_performance.md", "a") as f:
+            with open(report_filename, "a") as f:
                 f.write(result + "\n")
 
             logging.info(
@@ -76,13 +97,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "--puzzles",
         nargs="+",
-        default=["puzzle_1", "puzzle_2", "puzzle_3", "puzzle_4", "puzzle_5"],
+        default=[
+            "ucu/puzzle_10",
+            "ucu/puzzle_20",
+            "ucu/puzzle_30",
+            "ucu/puzzle_40",
+            "ucu/puzzle_50",
+            "ucu/puzzle_60",
+            "ucu/puzzle_70",
+            "ucu/puzzle_80",
+            "ucu/puzzle_90",
+            "ucu/puzzle_100",
+        ],
         help="The names of the puzzles to solve.",
     )
     parser.add_argument(
         "--solvers",
         nargs="+",
-        default=["hill_climbing", "simulated_annealing", "hybrid_genetic", "memetic"],
+        default=["dqn_genetic"],
         help="The solvers to use.",
     )
     parser.add_argument(

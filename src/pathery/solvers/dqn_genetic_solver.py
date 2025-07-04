@@ -1,6 +1,6 @@
-import logging
 import os
-from typing import Optional
+import json
+from typing import Optional, Any
 from pathery_env.envs.pathery import PatheryEnv
 from pathery.solvers.base_solver import BaseSolver
 from pathery.solvers.genetic_solver import GeneticSolver
@@ -16,35 +16,16 @@ class DqnGeneticSolver(GeneticSolver):
     def __init__(
         self,
         env: PatheryEnv,
-        population_size: int = 100,
-        generations: int = 100,
-        tournament_size: int = 3,
-        mutation_rate: float = 0.1,
-        crossover_rate: float = 0.8,
-        best_known_solution: int = 0,
-        time_limit: Optional[int] = None,
-        perf_logger: Optional[logging.Logger] = None,
-        data_log_dir: Optional[str] = None,
         model_path: str = "output/checkpoints",
+        epsilon: float = 0.15,
         **kwargs,
     ) -> None:
         """
         Initializes the DqnGeneticSolver.
         """
-        super().__init__(
-            env,
-            population_size,
-            generations,
-            tournament_size,
-            mutation_rate,
-            crossover_rate,
-            best_known_solution,
-            time_limit,
-            perf_logger,
-            data_log_dir,
-            **kwargs,
-        )
-        self.agent = DQNAgent(env)
+        super().__init__(env, **kwargs)
+        self.agent = DQNAgent()
+        self.epsilon = epsilon
         model_path = os.path.abspath(model_path)
         options = ocp.CheckpointManagerOptions(max_to_keep=3, create=True)
         mngr = ocp.CheckpointManager(model_path, options=options)
@@ -54,12 +35,18 @@ class DqnGeneticSolver(GeneticSolver):
                 latest_step, args=ocp.args.StandardRestore(self.agent.state)
             )
 
-    def _mutate(self, env: PatheryEnv) -> PatheryEnv:
+    def _mutate(self, env: PatheryEnv, data_logger: Optional[Any] = None) -> PatheryEnv:
         """
         Performs a mutation on a chromosome using the DQN model.
         """
         mutated_env = env.copy()
-        action = self.agent.choose_action(mutated_env.grid, epsilon=0.0)
+        pre_mutation_state = mutated_env.grid.copy()
+        fitness_before = self._calculate_fitness(mutated_env)
+
+        action = self.agent.choose_action(mutated_env.grid, self.epsilon)
+
+        if not action:
+            return mutated_env
 
         if action["type"] == "MOVE":
             from_pos = action["from"]
@@ -72,5 +59,17 @@ class DqnGeneticSolver(GeneticSolver):
         elif action["type"] == "REMOVE":
             from_pos = action["from"]
             BaseSolver._remove_wall(mutated_env, from_pos[0], from_pos[1])
+
+        fitness_after = self._calculate_fitness(mutated_env)
+        reward = fitness_after - fitness_before
+
+        if data_logger:
+            log_entry = {
+                "pre_mutation_state": pre_mutation_state.tolist(),
+                "mutation_info": action,
+                "reward": reward,
+            }
+            data_logger.write(json.dumps(log_entry) + "\n")
+            data_logger.flush()
 
         return mutated_env

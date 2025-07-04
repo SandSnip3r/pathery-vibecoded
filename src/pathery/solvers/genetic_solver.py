@@ -29,23 +29,19 @@ class GeneticSolver(BaseSolver):
         data_log_dir: Optional[str] = None,
         **kwargs,
     ) -> None:
-        """
-        Initializes the GeneticSolver.
-        """
-        super().__init__(
-            env,
-            best_known_solution,
-            time_limit,
-            perf_logger,
-        )
+        super().__init__(env, time_limit)
         self.population_size = population_size
         self.generations = generations
         self.tournament_size = tournament_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.elitism_size = elitism_size
-        self.population = []
+        self.best_known_solution = best_known_solution
+        self.population: List[PatheryEnv] = []
+        self.perf_logger = perf_logger
         self.data_log_dir = data_log_dir
+        self.kwargs = kwargs
+        self.data_logger = None
 
     def __del__(self):
         pass
@@ -61,6 +57,8 @@ class GeneticSolver(BaseSolver):
 
         data_logger = None
         if self.data_log_dir:
+            # Ensure the directory exists
+            os.makedirs(self.data_log_dir, exist_ok=True)
             log_file = os.path.join(self.data_log_dir, f"mutations_{os.getpid()}.jsonl")
             try:
                 data_logger = open(log_file, "w")
@@ -149,17 +147,34 @@ class GeneticSolver(BaseSolver):
 
     def _initialize_population(self):
         """
-        Initializes the population of solutions.
+        Initializes the population of solutions. The first individual is the
+        original puzzle, and the rest are created by adding a small number of
+        walls, ensuring the path is never blocked.
         """
-        self.population = []
-        for i in range(self.population_size):
-            env_copy = self.env.copy()
-            open_cells = np.where(env_copy.grid == CellType.OPEN.value)
-            num_open_cells = len(open_cells[0])
-            max_walls = min(env_copy.wallsToPlace, num_open_cells)
-            num_walls = random.randint(1, max_walls)
-            BaseSolver(env_copy)._randomly_place_walls(num_walls)
-            self.population.append(env_copy)
+        print("Initializing population...")
+        self.population = [self.env.copy()]  # Seed with the original puzzle
+
+        for i in range(self.population_size - 1):
+            print(f"  Creating individual {i + 2}/{self.population_size}")
+            new_individual = self.env.copy()
+            # Apply a small number of random wall additions
+            num_modifications = random.randint(1, 100)
+            for _ in range(num_modifications):
+                open_cells = np.argwhere(new_individual.grid == CellType.OPEN.value)
+                if len(open_cells) == 0 or new_individual.remainingWalls == 0:
+                    break  # No more walls can be added
+
+                # Choose a random open cell to place a wall
+                y, x = random.choice(open_cells)
+                BaseSolver._add_wall(new_individual, x, y)
+
+                # Check if the new wall blocks the path
+                if self._calculate_fitness(new_individual) == 0:
+                    # If it does, remove it to ensure the path remains open
+                    BaseSolver._remove_wall(new_individual, x, y)
+
+            self.population.append(new_individual)
+        print("Population initialized.")
 
     def _calculate_fitness(self, env: PatheryEnv) -> float:
         """
@@ -303,6 +318,7 @@ class GeneticSolver(BaseSolver):
                 "reward": reward,
             }
             data_logger.write(json.dumps(log_entry) + "\n")
+            data_logger.flush()
 
         return mutated_env
 

@@ -48,7 +48,9 @@ def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
     if not solver_class:
         raise ValueError(f"Unknown solver: {solver_name}")
 
-    return solver_class(env, **kwargs)
+    # Extract perf_logger and pass it separately
+    perf_logger = kwargs.pop("perf_logger", None)
+    return solver_class(env, perf_logger=perf_logger, **kwargs)
 
 
 if __name__ == "__main__":

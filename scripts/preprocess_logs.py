@@ -18,7 +18,7 @@ def one_hot_encode(state: np.ndarray, max_channels: int) -> np.ndarray:
     return one_hot
 
 
-def preprocess_logs(log_dir, output_dir, batch_size=100):
+def preprocess_logs(input_dir, output_dir, batch_size=100):
     """
     Converts JSONL log files to pickled format in batches, with validation.
     """
@@ -31,7 +31,7 @@ def preprocess_logs(log_dir, output_dir, batch_size=100):
             f"[{time.time() - start_time:.2f}s] Created output directory: {output_dir}"
         )
 
-    log_files = [f for f in os.listdir(log_dir) if f.endswith(".jsonl")]
+    log_files = [f for f in os.listdir(input_dir) if f.endswith(".jsonl")]
     total_files = len(log_files)
     processed_files = 0
     batch_num = 0
@@ -52,7 +52,7 @@ def preprocess_logs(log_dir, output_dir, batch_size=100):
             print(
                 f"[{time.time() - start_time:.2f}s] Processing {filename} ({processed_files + 1}/{total_files})..."
             )
-            file_path = os.path.join(log_dir, filename)
+            file_path = os.path.join(input_dir, filename)
             with open(file_path, "r") as infile:
                 for line in infile:
                     stripped_line = line.strip()
@@ -96,10 +96,16 @@ def preprocess_logs(log_dir, output_dir, batch_size=100):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Preprocess GA transition logs.")
     parser.add_argument(
-        "log_dir", type=str, help="Directory containing the raw log files."
+        "--input_dir",
+        type=str,
+        required=True,
+        help="Directory containing the raw log files.",
     )
     parser.add_argument(
-        "output_dir", type=str, help="Directory to save the processed data."
+        "--output_dir",
+        type=str,
+        default=None,
+        help="Directory to save the processed data. If not provided, it will be auto-generated.",
     )
     parser.add_argument(
         "--batch_size",
@@ -109,4 +115,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    preprocess_logs(args.log_dir, args.output_dir, args.batch_size)
+    output_dir = args.output_dir
+    if output_dir is None:
+        input_dir_name = os.path.basename(os.path.normpath(args.input_dir))
+        output_dir = os.path.join("data", f"preprocessed_{input_dir_name}")
+
+    preprocess_logs(args.input_dir, output_dir, args.batch_size)

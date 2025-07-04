@@ -20,6 +20,7 @@ def run_in_parallel(
     min_generations: int,
     max_generations: int,
     data_log_dir: str,
+    solver: str,
 ):
     """
     Runs the pathery solver for a list of puzzles in parallel with random generations.
@@ -32,7 +33,7 @@ def run_in_parallel(
             "src/pathery/main.py",
             puzzle_name,
             "--solver",
-            "genetic",
+            solver,
             "--num_generations",
             str(num_generations),
             "--data_log_dir",
@@ -57,8 +58,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_log_dir",
         type=str,
-        default="output/ga_transitions",
+        default="output/dqn_ga_transitions",
         help="Directory to save mutation data logs.",
+    )
+    parser.add_argument(
+        "--solver",
+        type=str,
+        default="dqn_genetic",
+        help="The solver to use for data collection.",
     )
     parser.add_argument(
         "--duration",
@@ -97,6 +104,7 @@ if __name__ == "__main__":
             args.min_generations,
             args.max_generations,
             args.data_log_dir,
+            args.solver,
         )
         print("Batch finished.")
 
