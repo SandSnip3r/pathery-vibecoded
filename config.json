@@ -29,14 +29,13 @@
       "beam_width": 20,
       "search_depth": 10
     },
-    "dqn_genetic": {
+    "genetic": {
       "population_size": 100,
       "generations": 100,
       "tournament_size": 3,
-      "mutation_rate": 0.1,
+      "mutation_rate": 0.8,
       "crossover_rate": 0.8,
-      "elitism_size": 2,
-      "model_path": "output/checkpoints_finetuned"
+      "elitism_size": 2
     }
   }
 }

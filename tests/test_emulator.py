@@ -1,7 +1,7 @@
 import unittest
 
 from src.pathery_env.envs.pathery import PatheryEnv
-from tests.map_builder import MapBuilder
+from src.pathery.map_builder import MapBuilder
 
 
 class TestPathery(unittest.TestCase):

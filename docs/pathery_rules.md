@@ -2,7 +2,9 @@
 
 ## Core Objective
 
-The main goal in Pathery is to create the longest possible path from a starting point to a finishing point on a grid. Puzzles can have multiple starts and multiple goals. This is done by placing a limited number of "walls" to guide a pathfinding AI.
+The main goal in Pathery is to create the longest possible path from a starting point to a finishing point on a grid. This is done by placing a limited number of "walls" to guide a pathfinding AI.
+
+Puzzles can have multiple start and goal positions. In cases with multiple starts, the pathfinding AI will calculate the shortest path from all available starting positions and select the one that results in the shortest overall path.
 
 ## Pathfinding AI
 
@@ -23,9 +25,9 @@ For each puzzle, you have a limited number of walls to place on the grid. These 
 
 As you progress, the game introduces new elements:
 
-*   **Ice Tiles:** The pathfinding AI will prioritize moving onto ice tiles to find the shortest route. You must strategically place walls to work around this behavior.
-*   **Portals:** The path can enter one portal and exit another, adding another layer of complexity to path calculation.
-*   **Checkpoints:** Checkpoints are capital letters from A to N. There can exist multiple instances of the same checkpoint. If multiple instances exist, the pathfinding algorithm always finds the shortest path from the current position to the nearest checkpoint, and then repeats, until finally find the shortest path to the nearest goal.
+*   **Ice Tiles:** The path cannot turn on an ice tile. If the path enters an ice tile, it must continue in a straight line until it is no longer on an ice tile.
+*   **Teleporters:** The pathfinding algorithm ignores teleporters when calculating the shortest route. A path might pass through a teleporter, but the teleporter itself does not influence the initial path calculation. If a path does enter a teleporter, it will emerge from a corresponding exit point, and the path will then be recalculated to the original destination.
+*   **Checkpoints:** Checkpoints are capital letters from A to N. The path must pass through all checkpoints in alphabetical order before heading to the goal. If multiple instances of the same checkpoint exist, the pathfinding algorithm will choose the one that results in the shortest path to that checkpoint.
 
 ## Scoring
 

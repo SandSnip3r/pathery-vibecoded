@@ -1,6 +1,6 @@
 # Experiment: Reward Shaping for DQN Genetic Solver
 
-**Status: Open**
+**Status: Closed**
 
 ## Objective
 
@@ -54,6 +54,12 @@ The performance of the fine-tuned model will be evaluated against the baseline `
 2.  Run `scripts/benchmark.py` to generate a new performance report.
 3.  Compare the results to the baseline `genetic` solver and the previous `dqn_genetic` solver.
 
-## Expected Outcome
+## Conclusion
 
-The fine-tuned model with reward shaping will demonstrate a significant improvement in performance over the baseline `genetic` solver and the previous iteration of the `dqn_genetic` solver.
+The experiment has been closed. The DQN model, even with reward shaping and extensive hyperparameter tuning, failed to outperform the baseline `genetic` solver. The model's guidance was consistently detrimental to performance.
+
+However, the hyperparameter tuning process revealed a significant insight: a purely random `genetic` solver with a very high mutation rate (`0.8`) and `epsilon=1.0` (i.e., completely random mutations) dramatically outperforms all other configurations, including the original baseline.
+
+The key takeaway is that for this problem, aggressive, random exploration is a more effective strategy than using our current DQN model. The default solver has been updated to use these new optimal hyperparameters, and the `dqn_genetic` solver has been deprecated.
+
+Subsequent benchmark testing (`benchmarks/solver_performance_genetic_20250705-140509.md`) has confirmed the high performance of this new configuration, establishing it as the new state-of-the-art and the baseline for future experiments.

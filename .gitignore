@@ -150,3 +150,4 @@ combined_mutations.jsonl
 # Runs
 runs/
 data/preprocessed_transitions/
+out.txt
