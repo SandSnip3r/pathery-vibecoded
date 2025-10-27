@@ -36,6 +36,18 @@
       "mutation_rate": 0.8,
       "crossover_rate": 0.8,
       "elitism_size": 2
+    },
+    "memetic_heuristic": {
+      "population_size": 100,
+      "generations": 100,
+      "tournament_size": 3,
+      "mutation_rate": 0.8,
+      "crossover_rate": 0.8,
+      "elitism_size": 2,
+      "q_value_threshold": 0.5,
+      "local_search_generations": 10,
+      "local_search_iterations": 10,
+      "model_path": "output/checkpoints_backup_20250704-223429/"
     }
   }
 }

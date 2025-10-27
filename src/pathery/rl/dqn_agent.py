@@ -191,12 +191,18 @@ class DQNAgent:
         grid_size=(19, 27),
         max_channels=34,
         model_path: Optional[str] = None,
+        training: bool = True,
     ):
         self.grid_size = grid_size
         self.max_channels = max_channels
         self.batch_size = batch_size
         self.key = jax.random.PRNGKey(0)
-        self.replay_buffer = ExperienceReplayBuffer(buffer_size, batch_size, self.key)
+        if training:
+            self.replay_buffer = ExperienceReplayBuffer(
+                buffer_size, batch_size, self.key
+            )
+        else:
+            self.replay_buffer = None
         self.epsilon = epsilon_start
         self.epsilon_start = epsilon_start
         self.epsilon_end = epsilon_end
@@ -233,6 +239,23 @@ class DQNAgent:
         """Converts a 2D grid state into a one-hot encoded 3D array."""
         one_hot = jax.nn.one_hot(state, self.max_channels)
         return jnp.transpose(one_hot, (1, 0, 2))
+
+    def get_q_values(self, board_state: np.ndarray) -> np.ndarray:
+        """
+        Gets the Q-values for a given board state.
+        """
+        obs = self._one_hot_encode(board_state)
+        obs = jnp.expand_dims(obs, axis=0)
+
+        removal_scores, placement_scores, action_type_scores = self.state.apply_fn(
+            {"params": self.state.params}, obs
+        )
+
+        return (
+            np.array(removal_scores),
+            np.array(placement_scores),
+            np.array(action_type_scores),
+        )
 
     def choose_action(self, board_state: np.ndarray, epsilon: float) -> Dict[str, Any]:
         """

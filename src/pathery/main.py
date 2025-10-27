@@ -18,6 +18,7 @@ from pathery.solvers import (
     HillClimbingSolver,
     HybridGASolver,
     HybridGeneticSolver,
+    MemeticHeuristicSolver,
     MemeticSolver,
     SimulatedAnnealingSolver,
 )
@@ -43,6 +44,7 @@ def solver_factory(solver_name: str, env: PatheryEnv, **kwargs) -> BaseSolver:
         "genetic": GeneticSolver,
         "hybrid_ga": HybridGASolver,
         "dqn_genetic": DqnGeneticSolver,
+        "memetic_heuristic": MemeticHeuristicSolver,
     }.get(solver_name)
 
     if not solver_class:

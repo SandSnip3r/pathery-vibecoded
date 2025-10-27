@@ -7,6 +7,7 @@ from .hybrid_ga_solver import HybridGASolver
 from .hybrid_genetic_solver import HybridGeneticSolver
 from .memetic_solver import MemeticSolver
 from .simulated_annealing_solver import SimulatedAnnealingSolver
+from .memetic_heuristic_solver import MemeticHeuristicSolver
 
 __all__ = [
     "BaseSolver",
@@ -18,4 +19,5 @@ __all__ = [
     "GeneticSolver",
     "HybridGASolver",
     "DqnGeneticSolver",
+    "MemeticHeuristicSolver",
 ]
